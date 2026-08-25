@@ -1,24 +1,28 @@
 // ════════════════════════════════════════════════════════════════
-// CONTROLE PESSOAL - APP.JS
+// CONTROLE PESSOAL - APP.JS - 6 TABS VERSION
 // ════════════════════════════════════════════════════════════════
 
 // ── DADOS GLOBAIS
 let dados = {
     receitas: [],
     despesas: [],
-    lancamentos: {},
-    vendas: []
+    estoque: [],
+    vendas: {}
 };
 
 const DIAS_SEMANA = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
+let chartFluxo = null;
+let chartSaldo = null;
 
 // ── INICIALIZAÇÃO
 document.addEventListener('DOMContentLoaded', () => {
     carregarDados();
     inicializarDatas();
     renderizarDashboard();
-    carregarDia();
-    renderizarEdicao();
+    carregarDiaVape();
+    renderizarEstoque();
+    renderizarReceitas();
+    renderizarDespesas();
 });
 
 // ════════════════════════════════════════════════════════════════
@@ -40,7 +44,7 @@ function salvarDados() {
 
 function carregarDadosIniciais() {
     dados.receitas = [
-        { id: 1, nome: 'Gio (Salário)', valor: 1000, dia: 5 },
+        { id: 1, nome: 'Gio', valor: 1000, dia: 5 },
         { id: 2, nome: 'Maria Luiza', valor: 750, dia: 10 },
         { id: 3, nome: 'De Motos', valor: 3450, dia: 10 },
         { id: 4, nome: 'Aparecida', valor: 850, dia: 15 },
@@ -62,6 +66,13 @@ function carregarDadosIniciais() {
         { id: 10, descricao: 'Cartão Sicoob', valor: 2400, dia: 15 }
     ];
 
+    dados.estoque = [
+        { id: 1, nome: 'Liquido 20ml', quantidade: 100, preco: 25.00 },
+        { id: 2, nome: 'Pod 2ml', quantidade: 50, preco: 15.00 },
+        { id: 3, nome: 'Bateria', quantidade: 30, preco: 45.00 },
+        { id: 4, nome: 'Coil', quantidade: 75, preco: 8.00 }
+    ];
+
     salvarDados();
 }
 
@@ -69,7 +80,7 @@ function carregarDadosIniciais() {
 // NAVEGAÇÃO
 // ════════════════════════════════════════════════════════════════
 
-function switchPage(pageId) {
+function tab(pageId) {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
 
@@ -77,9 +88,7 @@ function switchPage(pageId) {
     event.target.classList.add('active');
 
     if (pageId === 'projecao') {
-        renderizarProjecao();
-    } else if (pageId === 'edicao') {
-        renderizarEdicao();
+        setTimeout(() => renderizarProjecao(), 100);
     }
 }
 
@@ -112,21 +121,13 @@ function inicializarDatas() {
     const hoje = new Date();
     const isoHoje = hoje.toISOString().split('T')[0];
 
-    document.getElementById('lancData').value = isoHoje;
-    document.getElementById('filtroDataDe').valueAsDate = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
-    document.getElementById('filtroDataAte').value = isoHoje;
-    document.getElementById('projDataDe').value = isoHoje;
-    document.getElementById('projDataAte').value = isoHoje;
-}
+    document.getElementById('vapeData').value = isoHoje;
 
-function preencherPeriodoAtual() {
-    const hoje = new Date();
     const primeiroDia = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
     const ultimoDia = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
 
     document.getElementById('projDataDe').value = primeiroDia.toISOString().split('T')[0];
     document.getElementById('projDataAte').value = ultimoDia.toISOString().split('T')[0];
-    renderizarProjecao();
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -135,13 +136,13 @@ function preencherPeriodoAtual() {
 
 function renderizarDashboard() {
     const totalReceitaFixa = dados.receitas.reduce((sum, r) => sum + r.valor, 0);
-    const totalDespesa = dados.despesas.reduce((sum, d) => sum + d.valor, 0);
-    const receitaLoja = 3800; // Média estimada
-    const saldo = totalReceitaFixa + receitaLoja - totalDespesa;
+    const totalDespesaFixa = dados.despesas.reduce((sum, d) => sum + d.valor, 0);
+    const receitaVape = calcularTotalVendas();
+    const saldo = totalReceitaFixa + receitaVape - totalDespesaFixa;
 
     document.getElementById('dashReceitaFixa').textContent = formatarMoeda(totalReceitaFixa);
-    document.getElementById('dashReceitaLoja').textContent = formatarMoeda(receitaLoja);
-    document.getElementById('dashDespesa').textContent = formatarMoeda(totalDespesa);
+    document.getElementById('dashReceitaVape').textContent = formatarMoeda(receitaVape);
+    document.getElementById('dashDespesaFixa').textContent = formatarMoeda(totalDespesaFixa);
     document.getElementById('dashSaldo').textContent = formatarMoeda(saldo);
 
     const tbody = document.getElementById('dashReceitasBody');
@@ -149,9 +150,18 @@ function renderizarDashboard() {
         <tr>
             <td>${r.nome}</td>
             <td class="num positive editable" onclick="editarReceita(${r.id}, 'valor')" title="Clique para editar">${formatarMoeda(r.valor)}</td>
-            <td><span class="badge editable" onclick="editarReceita(${r.id}, 'dia')" title="Clique para editar">Dia ${r.dia}</span></td>
+            <td><span class="badge badge-success editable" onclick="editarReceita(${r.id}, 'dia')" title="Clique para editar">Dia ${r.dia}</span></td>
         </tr>
     `).join('');
+}
+
+function calcularTotalVendas() {
+    let total = 0;
+    Object.values(dados.vendas).forEach(dia => {
+        const entrada = (dia.pix || 0) + (dia.dinheiro || 0) + (dia.credito || 0) + (dia.debito || 0);
+        total += entrada;
+    });
+    return total;
 }
 
 function editarReceita(id, campo) {
@@ -165,7 +175,7 @@ function editarReceita(id, campo) {
             receita.valor = parseFloat(novoValor) || receita.valor;
         }
     } else if (campo === 'dia') {
-        novoValor = prompt(`Novo dia do mês para ${receita.nome}:`, receita.dia);
+        novoValor = prompt(`Novo dia para ${receita.nome}:`, receita.dia);
         if (novoValor !== null && novoValor !== '') {
             receita.dia = parseInt(novoValor) || receita.dia;
         }
@@ -176,180 +186,363 @@ function editarReceita(id, campo) {
 }
 
 // ════════════════════════════════════════════════════════════════
-// LANÇAMENTO
+// SPEED VAPE
 // ════════════════════════════════════════════════════════════════
 
-function carregarDia() {
-    const dataInput = document.getElementById('lancData').value;
+function carregarDiaVape() {
+    const dataInput = document.getElementById('vapeData').value;
     const data = new Date(dataInput + 'T00:00:00');
 
-    const nomeDia = data.toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-    document.getElementById('lancDataInfo').textContent = nomeDia;
-
-    const lancamento = dados.lancamentos[dataInput] || { pix: 0, dinheiro: 0, credito: 0, debito: 0, saidas: [] };
-
-    document.getElementById('lancPix').value = lancamento.pix || '';
-    document.getElementById('lancDinheiro').value = lancamento.dinheiro || '';
-    document.getElementById('lancCredito').value = lancamento.credito || '';
-    document.getElementById('lancDebito').value = lancamento.debito || '';
-
-    const saidasList = document.getElementById('lancSaidasList');
-    saidasList.innerHTML = '';
-    (lancamento.saidas || []).forEach(saida => adicionarSaidaRow(saida.descricao, saida.valor));
-
-    calcularSaldo();
-    renderizarResumo();
-}
-
-function adicionarSaida() {
-    adicionarSaidaRow('', '');
-}
-
-function adicionarSaidaRow(descricao = '', valor = '') {
-    const id = 'saida_' + Date.now();
-    const html = `
-        <div class="list-item" id="${id}">
-            <div class="list-item-content" style="flex: 1;">
-                <input type="text" placeholder="Descrição" value="${descricao}" style="width: 100%; background: transparent; border: none; color: var(--text); margin-bottom: 6px;" onchange="calcularSaldo()">
-                <input type="number" placeholder="0,00" value="${valor}" step="0.01" min="0" style="width: 100%; background: transparent; border: none; color: var(--text); font-family: 'Courier New';" onchange="calcularSaldo()">
-            </div>
-            <button class="btn btn-secondary btn-small btn-icon" onclick="document.getElementById('${id}').remove(); calcularSaldo()">✕</button>
-        </div>
-    `;
-    document.getElementById('lancSaidasList').insertAdjacentHTML('beforeend', html);
-}
-
-function coletarSaidas() {
-    const saidas = [];
-    document.querySelectorAll('#lancSaidasList .list-item').forEach(item => {
-        const inputs = item.querySelectorAll('input');
-        const descricao = inputs[0].value.trim();
-        const valor = parseFloat(inputs[1].value) || 0;
-        if (descricao || valor > 0) {
-            saidas.push({ descricao, valor });
-        }
+    const nomeDia = data.toLocaleDateString('pt-BR', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
     });
-    return saidas;
-}
+    document.getElementById('vapeDataInfo').textContent = nomeDia;
 
-function calcularSaldo() {
-    const pix = parseFloat(document.getElementById('lancPix').value) || 0;
-    const dinheiro = parseFloat(document.getElementById('lancDinheiro').value) || 0;
-    const credito = parseFloat(document.getElementById('lancCredito').value) || 0;
-    const debito = parseFloat(document.getElementById('lancDebito').value) || 0;
-
-    const totalEntrada = pix + dinheiro + credito + debito;
-    const saidas = coletarSaidas();
-    const totalSaida = saidas.reduce((sum, s) => sum + s.valor, 0);
-    const resultado = totalEntrada - totalSaida;
-
-    document.getElementById('lancTotalEntrada').textContent = formatarMoeda(totalEntrada);
-    document.getElementById('lancTotalSaida').textContent = formatarMoeda(totalSaida);
-    document.getElementById('lancResultado').textContent = formatarMoeda(resultado);
-
-    renderizarResumo();
-}
-
-function renderizarResumo() {
-    const tbody = document.getElementById('lancResumoBody');
-    const pix = parseFloat(document.getElementById('lancPix').value) || 0;
-    const dinheiro = parseFloat(document.getElementById('lancDinheiro').value) || 0;
-    const credito = parseFloat(document.getElementById('lancCredito').value) || 0;
-    const debito = parseFloat(document.getElementById('lancDebito').value) || 0;
-    const saidas = coletarSaidas();
-
-    let html = '';
-
-    if (pix > 0) html += `<tr><td>Pix</td><td class="num positive">+${formatarMoeda(pix)}</td><td><span class="badge badge-accent">Entrada</span></td></tr>`;
-    if (dinheiro > 0) html += `<tr><td>Dinheiro</td><td class="num positive">+${formatarMoeda(dinheiro)}</td><td><span class="badge badge-accent">Entrada</span></td></tr>`;
-    if (credito > 0) html += `<tr><td>Crédito</td><td class="num positive">+${formatarMoeda(credito)}</td><td><span class="badge badge-accent">Entrada</span></td></tr>`;
-    if (debito > 0) html += `<tr><td>Débito</td><td class="num positive">+${formatarMoeda(debito)}</td><td><span class="badge badge-accent">Entrada</span></td></tr>`;
-
-    saidas.forEach(s => {
-        html += `<tr><td>${s.descricao}</td><td class="num negative">-${formatarMoeda(s.valor)}</td><td><span class="badge badge-danger">Saída</span></td></tr>`;
+    // Preencher dropdown de produtos
+    const select = document.getElementById('vapeProduto');
+    select.innerHTML = '<option value="">Selecione um produto</option>';
+    dados.estoque.forEach(p => {
+        select.innerHTML += `<option value="${p.id}">${p.nome} (${p.quantidade})</option>`;
     });
 
-    if (!html) {
-        html = '<tr><td colspan="3" style="text-align: center; color: var(--text-secondary); padding: 20px;">Nenhum lançamento</td></tr>';
+    const vendaDia = dados.vendas[dataInput] || {
+        pix: 0,
+        dinheiro: 0,
+        credito: 0,
+        debito: 0,
+        vendidos: []
+    };
+
+    document.getElementById('vapePix').value = vendaDia.pix || '';
+    document.getElementById('vapeDinheiro').value = vendaDia.dinheiro || '';
+    document.getElementById('vapeCredito').value = vendaDia.credito || '';
+    document.getElementById('vapeDebito').value = vendaDia.debito || '';
+
+    renderizarVendasVape(vendaDia.vendidos || []);
+    calcularVape();
+}
+
+function vapeAnterior() {
+    const input = document.getElementById('vapeData');
+    const data = new Date(input.value + 'T00:00:00');
+    data.setDate(data.getDate() - 1);
+    input.value = data.toISOString().split('T')[0];
+    carregarDiaVape();
+}
+
+function vapeProximo() {
+    const input = document.getElementById('vapeData');
+    const data = new Date(input.value + 'T00:00:00');
+    data.setDate(data.getDate() + 1);
+    input.value = data.toISOString().split('T')[0];
+    carregarDiaVape();
+}
+
+function adicionarVendaVape() {
+    const produtoId = parseInt(document.getElementById('vapeProduto').value);
+    const quantidade = parseInt(document.getElementById('vapeQtd').value) || 1;
+
+    if (!produtoId) {
+        alert('Selecione um produto');
+        return;
     }
 
-    tbody.innerHTML = html;
+    const produto = dados.estoque.find(p => p.id === produtoId);
+    if (!produto) return;
+
+    if (produto.quantidade < quantidade) {
+        alert(`Quantidade insuficiente. Disponível: ${produto.quantidade}`);
+        return;
+    }
+
+    const dataInput = document.getElementById('vapeData').value;
+    const vendaDia = dados.vendas[dataInput] || {
+        pix: 0,
+        dinheiro: 0,
+        credito: 0,
+        debito: 0,
+        vendidos: []
+    };
+
+    const vendaExistente = vendaDia.vendidos.find(v => v.id === produtoId);
+    if (vendaExistente) {
+        vendaExistente.quantidade += quantidade;
+    } else {
+        vendaDia.vendidos.push({
+            id: produtoId,
+            nome: produto.nome,
+            quantidade: quantidade,
+            preco: produto.preco
+        });
+    }
+
+    renderizarVendasVape(vendaDia.vendidos);
+    calcularVape();
+    document.getElementById('vapeQtd').value = 1;
+    document.getElementById('vapeProduto').value = '';
 }
 
-function salvarLancamento() {
-    const data = document.getElementById('lancData').value;
-    const pix = parseFloat(document.getElementById('lancPix').value) || 0;
-    const dinheiro = parseFloat(document.getElementById('lancDinheiro').value) || 0;
-    const credito = parseFloat(document.getElementById('lancCredito').value) || 0;
-    const debito = parseFloat(document.getElementById('lancDebito').value) || 0;
-    const saidas = coletarSaidas().map(s => ({ descricao: s.descricao, valor: s.valor }));
-
-    dados.lancamentos[data] = { pix, dinheiro, credito, debito, saidas };
-    salvarDados();
-
-    alert('✓ Lançamento salvo com sucesso!');
-    renderizarEdicao();
+function renderizarVendasVape(vendidos) {
+    const list = document.getElementById('vapeVendasList');
+    list.innerHTML = vendidos.map((v, i) => `
+        <div style="background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; padding: 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <div style="font-weight: 600;">${v.nome}</div>
+                <div style="font-size: 11px; color: var(--text-secondary);">Qtd: ${v.quantidade} × R$ ${v.preco.toFixed(2)}</div>
+            </div>
+            <button class="btn btn-secondary btn-icon" onclick="removerVendaVape(${i})">✕</button>
+        </div>
+    `).join('');
 }
 
-// ════════════════════════════════════════════════════════════════
-// EDIÇÃO
-// ════════════════════════════════════════════════════════════════
+function removerVendaVape(index) {
+    const dataInput = document.getElementById('vapeData').value;
+    const vendaDia = dados.vendas[dataInput] || {
+        pix: 0,
+        dinheiro: 0,
+        credito: 0,
+        debito: 0,
+        vendidos: []
+    };
 
-function renderizarEdicao() {
-    const dataDe = document.getElementById('filtroDataDe').value;
-    const dataAte = document.getElementById('filtroDataAte').value;
+    vendaDia.vendidos.splice(index, 1);
+    renderizarVendasVape(vendaDia.vendidos);
+    calcularVape();
+}
 
-    let lancamentos = Object.keys(dados.lancamentos).sort();
+function calcularVape() {
+    const pix = parseFloat(document.getElementById('vapePix').value) || 0;
+    const dinheiro = parseFloat(document.getElementById('vapeDinheiro').value) || 0;
+    const credito = parseFloat(document.getElementById('vapeCredito').value) || 0;
+    const debito = parseFloat(document.getElementById('vapeDebito').value) || 0;
 
-    if (dataDe) lancamentos = lancamentos.filter(d => d >= dataDe);
-    if (dataAte) lancamentos = lancamentos.filter(d => d <= dataAte);
+    const dataInput = document.getElementById('vapeData').value;
+    const vendaDia = dados.vendas[dataInput] || {
+        pix: 0,
+        dinheiro: 0,
+        credito: 0,
+        debito: 0,
+        vendidos: []
+    };
 
-    let totalEntrada = 0, totalSaida = 0, saldoAcum = 0;
-    const tbody = document.getElementById('edicaoTableBody');
-    tbody.innerHTML = '';
+    const totalEntrada = pix + dinheiro + credito + debito;
+    const totalSaida = vendaDia.vendidos.reduce((sum, v) => sum + (v.quantidade * v.preco), 0);
+    const resultado = totalEntrada - totalSaida;
 
-    lancamentos.forEach(data => {
-        const lanc = dados.lancamentos[data];
-        const entrada = (lanc.pix || 0) + (lanc.dinheiro || 0) + (lanc.credito || 0) + (lanc.debito || 0);
-        const saida = (lanc.saidas || []).reduce((sum, s) => sum + s.valor, 0);
-        const resultado = entrada - saida;
+    document.getElementById('vapeTotalEntrada').textContent = formatarMoeda(totalEntrada);
+    document.getElementById('vapeTotalSaida').textContent = formatarMoeda(totalSaida);
+    document.getElementById('vapeResultado').textContent = formatarMoeda(resultado);
 
-        totalEntrada += entrada;
-        totalSaida += saida;
-        saldoAcum += resultado;
+    renderizarResumoVape(vendaDia.vendidos);
+}
 
-        const dataFormatada = formatarData(data);
-        const dataObj = new Date(data + 'T00:00:00');
-        const dia = DIAS_SEMANA[dataObj.getDay()];
+function renderizarResumoVape(vendidos) {
+    const tbody = document.getElementById('vapeResumoBody');
+    tbody.innerHTML = vendidos.map(v => `
+        <tr>
+            <td>${v.nome}</td>
+            <td class="num">${v.quantidade}</td>
+            <td class="num negative">${formatarMoeda(v.quantidade * v.preco)}</td>
+        </tr>
+    `).join('');
 
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td>${dataFormatada} (${dia})</td>
-            <td class="num positive">${formatarMoeda(entrada)}</td>
-            <td class="num negative">${formatarMoeda(saida)}</td>
-            <td class="num" style="color: ${resultado >= 0 ? 'var(--accent)' : 'var(--danger)'}">${formatarMoeda(resultado)}</td>
-            <td>
-                <button class="btn btn-secondary btn-small" onclick="editarDia('${data}')">Editar</button>
-            </td>
-        `;
-        tbody.appendChild(tr);
+    if (vendidos.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: var(--text-secondary); padding: 20px;">Nenhuma venda</td></tr>';
+    }
+}
+
+function salvarVape() {
+    const dataInput = document.getElementById('vapeData').value;
+    const pix = parseFloat(document.getElementById('vapePix').value) || 0;
+    const dinheiro = parseFloat(document.getElementById('vapeDinheiro').value) || 0;
+    const credito = parseFloat(document.getElementById('vapeCredito').value) || 0;
+    const debito = parseFloat(document.getElementById('vapeDebito').value) || 0;
+
+    const vendaDia = dados.vendas[dataInput] || {
+        pix: 0,
+        dinheiro: 0,
+        credito: 0,
+        debito: 0,
+        vendidos: []
+    };
+
+    vendaDia.pix = pix;
+    vendaDia.dinheiro = dinheiro;
+    vendaDia.credito = credito;
+    vendaDia.debito = debito;
+
+    // Reduzir estoque
+    vendaDia.vendidos.forEach(venda => {
+        const produto = dados.estoque.find(p => p.id === venda.id);
+        if (produto) {
+            produto.quantidade -= venda.quantidade;
+        }
     });
 
-    document.getElementById('edicaoTotalEntrada').textContent = formatarMoeda(totalEntrada);
-    document.getElementById('edicaoTotalSaida').textContent = formatarMoeda(totalSaida);
-    document.getElementById('edicaoSaldo').textContent = formatarMoeda(saldoAcum);
+    dados.vendas[dataInput] = vendaDia;
+    salvarDados();
+
+    document.getElementById('vapeIndicador').classList.add('show');
+    setTimeout(() => {
+        document.getElementById('vapeIndicador').classList.remove('show');
+    }, 2000);
+
+    renderizarDashboard();
 }
 
-function editarDia(data) {
-    document.getElementById('lancData').value = data;
-    switchPage('lancamento');
-    carregarDia();
+// ════════════════════════════════════════════════════════════════
+// ESTOQUE
+// ════════════════════════════════════════════════════════════════
+
+function renderizarEstoque() {
+    const tbody = document.getElementById('estoqueBody');
+    tbody.innerHTML = dados.estoque.map(p => {
+        const valorTotal = p.quantidade * p.preco;
+        return `
+            <tr>
+                <td>${p.nome}</td>
+                <td class="num editable" onclick="editarEstoque(${p.id}, 'quantidade')">${p.quantidade}</td>
+                <td class="num editable" onclick="editarEstoque(${p.id}, 'preco')">R$ ${p.preco.toFixed(2)}</td>
+                <td class="num">${formatarMoeda(valorTotal)}</td>
+                <td>
+                    <button class="btn btn-danger btn-small" onclick="deletarProduto(${p.id})">Remover</button>
+                </td>
+            </tr>
+        `;
+    }).join('');
 }
 
-function limparFiltros() {
-    document.getElementById('filtroDataDe').value = '';
-    document.getElementById('filtroDataAte').value = '';
-    renderizarEdicao();
+function adicionarProduto() {
+    const nome = document.getElementById('novoProdutoNome').value.trim();
+    const quantidade = parseInt(document.getElementById('novoProdutoQtd').value) || 0;
+    const preco = parseFloat(document.getElementById('novoProdutoPreco').value) || 0;
+
+    if (!nome) {
+        alert('Digite o nome do produto');
+        return;
+    }
+
+    const novoId = Math.max(...dados.estoque.map(p => p.id), 0) + 1;
+    dados.estoque.push({ id: novoId, nome, quantidade, preco });
+
+    salvarDados();
+    renderizarEstoque();
+
+    document.getElementById('novoProdutoNome').value = '';
+    document.getElementById('novoProdutoQtd').value = '';
+    document.getElementById('novoProdutoPreco').value = '';
+
+    carregarDiaVape();
+}
+
+function editarEstoque(id, campo) {
+    const produto = dados.estoque.find(p => p.id === id);
+    if (!produto) return;
+
+    let novoValor;
+    if (campo === 'quantidade') {
+        novoValor = prompt(`Nova quantidade para ${produto.nome}:`, produto.quantidade);
+        if (novoValor !== null) {
+            produto.quantidade = parseInt(novoValor) || produto.quantidade;
+        }
+    } else if (campo === 'preco') {
+        novoValor = prompt(`Novo preço para ${produto.nome}:`, produto.preco.toFixed(2));
+        if (novoValor !== null) {
+            produto.preco = parseFloat(novoValor) || produto.preco;
+        }
+    }
+
+    salvarDados();
+    renderizarEstoque();
+    carregarDiaVape();
+}
+
+function deletarProduto(id) {
+    if (confirm('Tem certeza que deseja remover este produto?')) {
+        dados.estoque = dados.estoque.filter(p => p.id !== id);
+        salvarDados();
+        renderizarEstoque();
+        carregarDiaVape();
+    }
+}
+
+// ════════════════════════════════════════════════════════════════
+// RECEITAS
+// ════════════════════════════════════════════════════════════════
+
+function renderizarReceitas() {
+    const tbody = document.getElementById('receitasBody');
+    tbody.innerHTML = dados.receitas.map(r => `
+        <tr>
+            <td>${r.nome}</td>
+            <td class="num positive editable" onclick="editarReceita(${r.id}, 'valor')" title="Clique para editar">${formatarMoeda(r.valor)}</td>
+            <td><span class="badge badge-success editable" onclick="editarReceita(${r.id}, 'dia')" title="Clique para editar">Dia ${r.dia}</span></td>
+            <td>
+                <button class="btn btn-danger btn-small" onclick="deletarReceita(${r.id})">Remover</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function deletarReceita(id) {
+    if (confirm('Remover esta fonte de renda?')) {
+        dados.receitas = dados.receitas.filter(r => r.id !== id);
+        salvarDados();
+        renderizarReceitas();
+        renderizarDashboard();
+    }
+}
+
+// ════════════════════════════════════════════════════════════════
+// DESPESAS
+// ════════════════════════════════════════════════════════════════
+
+function renderizarDespesas() {
+    const tbody = document.getElementById('despesasBody');
+    tbody.innerHTML = dados.despesas.map(d => `
+        <tr>
+            <td>${d.descricao}</td>
+            <td class="num negative editable" onclick="editarDespesa(${d.id}, 'valor')" title="Clique para editar">${formatarMoeda(d.valor)}</td>
+            <td><span class="badge badge-danger editable" onclick="editarDespesa(${d.id}, 'dia')" title="Clique para editar">Dia ${d.dia}</span></td>
+            <td>
+                <button class="btn btn-danger btn-small" onclick="deletarDespesa(${d.id})">Remover</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function editarDespesa(id, campo) {
+    const despesa = dados.despesas.find(d => d.id === id);
+    if (!despesa) return;
+
+    let novoValor;
+    if (campo === 'valor') {
+        novoValor = prompt(`Novo valor para ${despesa.descricao}:`, despesa.valor);
+        if (novoValor !== null) {
+            despesa.valor = parseFloat(novoValor) || despesa.valor;
+        }
+    } else if (campo === 'dia') {
+        novoValor = prompt(`Novo dia para ${despesa.descricao}:`, despesa.dia);
+        if (novoValor !== null) {
+            despesa.dia = parseInt(novoValor) || despesa.dia;
+        }
+    }
+
+    salvarDados();
+    renderizarDespesas();
+    renderizarDashboard();
+}
+
+function deletarDespesa(id) {
+    if (confirm('Remover esta despesa?')) {
+        dados.despesas = dados.despesas.filter(d => d.id !== id);
+        salvarDados();
+        renderizarDespesas();
+        renderizarDashboard();
+    }
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -373,31 +566,26 @@ function renderizarProjecao() {
     for (let d = new Date(diaInicio); d <= diaFim; d.setDate(d.getDate() + 1)) {
         const isoData = d.toISOString().split('T')[0];
         const dataObj = new Date(d);
-        const dia = dataObj.getDate();
+        const diaNum = dataObj.getDate();
 
-        // Receitas fixas
         let receita = 0;
         dados.receitas.forEach(r => {
-            if (r.dia === dia) {
+            if (r.dia === diaNum) {
                 receita += r.valor;
             }
         });
 
-        // Despesas fixas
         let despesa = 0;
         dados.despesas.forEach(d => {
-            if (d.dia === dia) {
+            if (d.dia === diaNum) {
                 despesa += d.valor;
             }
         });
 
-        // Lançamentos reais
-        const lanc = dados.lancamentos[isoData];
-        if (lanc) {
-            const entrada = (lanc.pix || 0) + (lanc.dinheiro || 0) + (lanc.credito || 0) + (lanc.debito || 0);
-            const saida = (lanc.saidas || []).reduce((sum, s) => sum + s.valor, 0);
+        const venda = dados.vendas[isoData];
+        if (venda) {
+            const entrada = (venda.pix || 0) + (venda.dinheiro || 0) + (venda.credito || 0) + (venda.debito || 0);
             receita += entrada;
-            despesa += saida;
         }
 
         const saldoDia = receita - despesa;
@@ -417,27 +605,110 @@ function renderizarProjecao() {
         });
     }
 
-    // Renderizar tabela
+    document.getElementById('projTotalReceita').textContent = formatarMoeda(totalReceitaGeral);
+    document.getElementById('projTotalDespesa').textContent = formatarMoeda(totalDespesaGeral);
+    document.getElementById('projSaldoAcum').textContent = formatarMoeda(saldoAcum);
+    document.getElementById('projDias').textContent = dias.length;
+
     const tbody = document.getElementById('projecaoTableBody');
     tbody.innerHTML = dias.map(d => `
         <tr>
             <td>${d.dataFormatada}</td>
-            <td>${d.dia}</td>
             <td class="num positive">${formatarMoeda(d.receita)}</td>
             <td class="num negative">${formatarMoeda(d.despesa)}</td>
-            <td class="num" style="color: ${d.saldoDia >= 0 ? 'var(--accent)' : 'var(--danger)'};">${formatarMoeda(d.saldoDia)}</td>
-            <td class="num" style="color: ${d.saldoAcum >= 0 ? 'var(--accent)' : 'var(--danger)'};">${formatarMoeda(d.saldoAcum)}</td>
+            <td class="num" style="color: ${d.saldoDia >= 0 ? 'var(--gr)' : 'var(--rd)'};">${formatarMoeda(d.saldoDia)}</td>
+            <td class="num" style="color: ${d.saldoAcum >= 0 ? 'var(--gr)' : 'var(--rd)'};">${formatarMoeda(d.saldoAcum)}</td>
         </tr>
     `).join('');
 
-    // Atualizar totais
-    document.getElementById('projTotalReceita').textContent = formatarMoeda(totalReceitaGeral);
-    document.getElementById('projTotalDespesa').textContent = formatarMoeda(totalDespesaGeral);
-    document.getElementById('projSaldoAcum').textContent = formatarMoeda(saldoAcum);
+    gerarGraficos(dias);
+}
+
+function gerarGraficos(dias) {
+    const labels = dias.map(d => d.dataFormatada);
+    const fluxos = dias.map(d => d.saldoDia);
+    const saldos = dias.map(d => d.saldoAcum);
+
+    // Gráfico de Fluxo Diário
+    const ctxFluxo = document.getElementById('chartFluxo').getContext('2d');
+    if (chartFluxo) chartFluxo.destroy();
+    chartFluxo = new Chart(ctxFluxo, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Fluxo Diário',
+                data: fluxos,
+                backgroundColor: fluxos.map(f => f >= 0 ? 'rgba(16, 185, 129, 0.8)' : 'rgba(239, 68, 68, 0.8)'),
+                borderColor: fluxos.map(f => f >= 0 ? 'var(--gr)' : 'var(--rd)'),
+                borderWidth: 1,
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    labels: { color: 'var(--text-secondary)', font: { size: 12 } }
+                }
+            },
+            scales: {
+                y: {
+                    ticks: { color: 'var(--text-secondary)' },
+                    grid: { color: 'var(--border)' }
+                },
+                x: {
+                    ticks: { color: 'var(--text-secondary)' },
+                    grid: { color: 'var(--border)' }
+                }
+            }
+        }
+    });
+
+    // Gráfico de Saldo Acumulado
+    const ctxSaldo = document.getElementById('chartSaldo').getContext('2d');
+    if (chartSaldo) chartSaldo.destroy();
+    chartSaldo = new Chart(ctxSaldo, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Saldo Acumulado',
+                data: saldos,
+                borderColor: 'var(--gr)',
+                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.3,
+                pointRadius: 3,
+                pointBackgroundColor: 'var(--gr)'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    labels: { color: 'var(--text-secondary)', font: { size: 12 } }
+                }
+            },
+            scales: {
+                y: {
+                    ticks: { color: 'var(--text-secondary)' },
+                    grid: { color: 'var(--border)' }
+                },
+                x: {
+                    ticks: { color: 'var(--text-secondary)' },
+                    grid: { color: 'var(--border)' }
+                }
+            }
+        }
+    });
 }
 
 // ════════════════════════════════════════════════════════════════
-// EXPORTAÇÃO DE DADOS
+// BACKUP / RESTORE
 // ════════════════════════════════════════════════════════════════
 
 function exportarDados() {
