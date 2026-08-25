@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle Financeiro Pessoal</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid #e0e0e0;
+            background: #f8f9fa;
+        }
+
+        .tab-button {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 500;
+            color: #666;
+            transition: all 0.3s ease;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+        }
+
+        .tab-button:hover {
+            background: #e8e8e8;
+        }
+
+        .tab-button.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+            background: white;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 30px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            border-color: #667eea;
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.1);
+        }
+
+        .card-title {
+            color: #666;
+            font-size: 0.9em;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+
+        .card-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .card.negative .card-value {
+            color: #e74c3c;
+        }
+
+        .card.positive .card-value {
+            color: #27ae60;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        th {
+            background: #f8f9fa;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #333;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        tr:hover {
+            background: #f8f9fa;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        input[type="date"],
+        input[type="month"],
+        select {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.95em;
+            width: 100%;
+            font-family: inherit;
+        }
+
+        input:focus,
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            font-size: 0.95em;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-secondary {
+            background: #e0e0e0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #d0d0d0;
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 0.85em;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .chart-container {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            min-height: 300px;
+        }
+
+        .section-title {
+            font-size: 1.5em;
+            color: #333;
+            margin: 30px 0 20px 0;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+
+        .success-message {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .success-message.show {
+            display: block;
+        }
+
+        .total-row {
+            font-weight: bold;
+            background: #f0f0f0;
+        }
+
+        .total-row td {
+            padding: 15px 12px;
+            border-top: 2px solid #667eea;
+            border-bottom: 2px solid #667eea;
+        }
+
+        .edit-row {
+            background: #fffbf0;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+
+        .badge-fixed {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .badge-variable {
+            background: #f3e5f5;
+            color: #7b1fa2;
+        }
+
+        .no-data {
+            text-align: center;
+            color: #999;
+            padding: 40px;
+            font-size: 1.1em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>💰 Controle Financeiro Pessoal</h1>
+            <p>Acompanhe suas receitas, despesas e projeções</p>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-button active" onclick="openTab(event, 'dashboard')">📊 Dashboard</button>
+            <button class="tab-button" onclick="openTab(event, 'receitas')">📥 Receitas</button>
+            <button class="tab-button" onclick="openTab(event, 'despesas')">📤 Despesas</button>
+            <button class="tab-button" onclick="openTab(event, 'vendas')">🏪 Vendas Loja</button>
+            <button class="tab-button" onclick="openTab(event, 'projections')">📈 Projeções</button>
+            <button class="tab-button" onclick="openTab(event, 'relatorios')">📋 Relatórios</button>
+        </div>
+
+        <!-- DASHBOARD -->
+        <div id="dashboard" class="tab-content active">
+            <div class="dashboard-grid">
+                <div class="card positive">
+                    <div class="card-title">Receita Total (Mês Atual)</div>
+                    <div class="card-value" id="totalReceitaMes">R$ 0,00</div>
+                </div>
+                <div class="card negative">
+                    <div class="card-title">Despesa Total (Mês Atual)</div>
+                    <div class="card-value" id="totalDespesaMes">R$ 0,00</div>
+                </div>
+                <div class="card">
+                    <div class="card-title">Saldo (Mês Atual)</div>
+                    <div class="card-value" id="saldoMes">R$ 0,00</div>
+                </div>
+                <div class="card positive">
+                    <div class="card-title">Receita Fixa Mensal</div>
+                    <div class="card-value" id="receitaFixaMensal">R$ 0,00</div>
+                </div>
+                <div class="card positive">
+                    <div class="card-title">Receita Loja (Média)</div>
+                    <div class="card-value" id="receitaLojaMedia">R$ 0,00</div>
+                </div>
+                <div class="card">
+                    <div class="card-title">Projeção Anual</div>
+                    <div class="card-value" id="projecaoAnual">R$ 0,00</div>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <h3>📊 Fluxo de Caixa - Próximos 12 Meses</h3>
+                <canvas id="fluxoCaixaChart" style="max-height: 400px; width: 100%;"></canvas>
+            </div>
+        </div>
+
+        <!-- RECEITAS -->
+        <div id="receitas" class="tab-content">
+            <div class="success-message" id="successMessage"></div>
+
+            <h2 class="section-title">Receitas Fixas (Inquilinos)</h2>
+            <button class="btn btn-primary" onclick="showAddReceitaForm()">+ Adicionar Inquilino</button>
+
+            <table id="receitasTable">
+                <thead>
+                    <tr>
+                        <th>Inquilino</th>
+                        <th>Valor (R$)</th>
+                        <th>Dia do Pagamento</th>
+                        <th>Tipo</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="receitasBody">
+                </tbody>
+            </table>
+
+            <div class="total-row" style="display: none;">
+                <strong>Total Receita Fixa: <span id="totalReceitaFixa">R$ 0,00</span></strong>
+            </div>
+        </div>
+
+        <!-- DESPESAS -->
+        <div id="despesas" class="tab-content">
+            <div class="success-message" id="successMessage2"></div>
+
+            <h2 class="section-title">Despesas Mensais</h2>
+            <button class="btn btn-primary" onclick="showAddDespesaForm()">+ Adicionar Despesa</button>
+
+            <table id="despesasTable">
+                <thead>
+                    <tr>
+                        <th>Descrição</th>
+                        <th>Valor (R$)</th>
+                        <th>Dia do Pagamento</th>
+                        <th>Categoria</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="despesasBody">
+                </tbody>
+            </table>
+
+            <div class="total-row" style="display: none;">
+                <strong>Total Despesas: <span id="totalDespesas">R$ 0,00</span></strong>
+            </div>
+        </div>
+
+        <!-- VENDAS LOJA -->
+        <div id="vendas" class="tab-content">
+            <div class="success-message" id="successMessage3"></div>
+
+            <h2 class="section-title">Registro de Vendas - Loja Vape</h2>
+
+            <div class="form-group">
+                <label>Mês/Ano:</label>
+                <input type="month" id="vendaMesAno" onchange="carregarVendas()">
+            </div>
+
+            <button class="btn btn-primary" onclick="showAddVendaForm()">+ Registrar Venda</button>
+
+            <table id="vendasTable">
+                <thead>
+                    <tr>
+                        <th>Data</th>
+                        <th>Produto</th>
+                        <th>Valor Compra (R$)</th>
+                        <th>Valor Venda (R$)</th>
+                        <th>Lucro (R$)</th>
+                        <th>Cliente</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="vendasBody">
+                </tbody>
+            </table>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 30px;">
+                <div class="card positive">
+                    <div class="card-title">Total Vendas (Período)</div>
+                    <div class="card-value" id="totalVendas">R$ 0,00</div>
+                </div>
+                <div class="card positive">
+                    <div class="card-title">Total Lucro (Período)</div>
+                    <div class="card-value" id="totalLucro">R$ 0,00</div>
+                </div>
+                <div class="card">
+                    <div class="card-title">Média por Venda</div>
+                    <div class="card-value" id="mediaVenda">R$ 0,00</div>
+                </div>
+                <div class="card">
+                    <div class="card-title">Quantidade de Vendas</div>
+                    <div class="card-value" id="qtdVendas">0</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PROJEÇÕES -->
+        <div id="projections" class="tab-content">
+            <h2 class="section-title">Projeções Mensais e Anuais</h2>
+
+            <div class="form-group">
+                <label>Selecione o Ano:</label>
+                <select id="anoProjecao" onchange="atualizarProjecoes()">
+                    <option value="2026">2026</option>
+                    <option value="2027">2027</option>
+                    <option value="2028">2028</option>
+                </select>
+            </div>
+
+            <table id="projecoesTable">
+                <thead>
+                    <tr>
+                        <th>Mês</th>
+                        <th>Receita Fixa (R$)</th>
+                        <th>Receita Loja (R$)</th>
+                        <th>Total Receita (R$)</th>
+                        <th>Despesas (R$)</th>
+                        <th>Saldo (R$)</th>
+                        <th>Saldo Acumulado (R$)</th>
+                    </tr>
+                </thead>
+                <tbody id="projecoesBody">
+                </tbody>
+            </table>
+        </div>
+
+        <!-- RELATÓRIOS -->
+        <div id="relatorios" class="tab-content">
+            <h2 class="section-title">Relatórios e Análises</h2>
+
+            <div class="dashboard-grid">
+                <div class="card">
+                    <div class="card-title">Receita Anual Projetada</div>
+                    <div class="card-value" id="receitaAnualProj">R$ 0,00</div>
+                </div>
+                <div class="card">
+                    <div class="card-title">Despesa Anual Projetada</div>
+                    <div class="card-value" id="despesaAnualProj">R$ 0,00</div>
+                </div>
+                <div class="card positive">
+                    <div class="card-title">Lucro Anual Projetado</div>
+                    <div class="card-value" id="lucroAnualProj">R$ 0,00</div>
+                </div>
+                <div class="card">
+                    <div class="card-title">Média Mensal Fixa</div>
+                    <div class="card-value" id="mediaReceitaFixa">R$ 0,00</div>
+                </div>
+            </div>
+
+            <h3 style="margin-top: 30px;">📊 Composição de Receita</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Fonte</th>
+                        <th>Valor Mensal (R$)</th>
+                        <th>Percentual</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Aluguéis</strong></td>
+                        <td id="totalAlugueis">R$ 0,00</td>
+                        <td id="percAlugueis">0%</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Salário</strong></td>
+                        <td id="totalSalario">R$ 0,00</td>
+                        <td id="percSalario">0%</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Loja Vape</strong></td>
+                        <td id="totalLojaVape">R$ 0,00</td>
+                        <td id="percLojaVape">0%</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <button class="btn btn-primary" onclick="exportarRelatorio()" style="margin-top: 20px;">📥 Exportar Relatório (Excel)</button>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
