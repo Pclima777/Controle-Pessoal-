@@ -1,0 +1,97 @@
+═══════════════════════════════════════════════════════════════
+   💰 CONTROLE FINANCEIRO PESSOAL - GUIA RÁPIDO
+═══════════════════════════════════════════════════════════════
+
+🚀 COMO ABRIR A APLICAÇÃO:
+
+█ OPÇÃO 1: Duplo clique no arquivo (Mais Simples)
+  ✓ Abra: index.html (duplo clique)
+  ✓ A aplicação abrirá no seu navegador
+
+█ OPÇÃO 2: Executar script automático
+
+  🪟 WINDOWS:
+    • Duplo clique em: start.bat
+
+  🐧 MAC/LINUX:
+    • Terminal: bash start.sh
+    • Depois acesse: http://localhost:8000
+
+█ OPÇÃO 3: Linha de comando
+
+  Terminal na pasta do projeto:
+
+  python3 -m http.server 8000
+
+  Depois acesse: http://localhost:8000
+
+═══════════════════════════════════════════════════════════════
+
+📋 ARQUIVOS DO PROJETO:
+
+  ✓ index.html       → Página principal (abra aqui)
+  ✓ app.js           → Lógica da aplicação
+  ✓ start.sh         → Script para Mac/Linux
+  ✓ start.bat        → Script para Windows
+  ✓ README.md        → Documentação completa
+
+═══════════════════════════════════════════════════════════════
+
+✨ O QUE FUNCIONA:
+
+  ✅ Dashboard com resumo financeiro
+  ✅ Editar receitas (inquilinos) - TEMPO REAL
+  ✅ Editar despesas - TEMPO REAL
+  ✅ Registrar vendas da loja
+  ✅ Ver projeções mensais e anuais
+  ✅ Relatórios e análises
+  ✅ Dados salvos automaticamente (LocalStorage)
+
+═══════════════════════════════════════════════════════════════
+
+📊 DADOS PRÉ-CARREGADOS:
+
+RECEITAS FIXAS (Total: R$ 7.800/mês)
+  • Gio (Salário): R$ 1.000 (dia 5)
+  • Maria Luiza: R$ 750 (dia 10)
+  • De Motos: R$ 3.450 (dia 10)
+  • Aparecida: R$ 850 (dia 15)
+  • Rafael: R$ 800 (dia 20)
+  • Vitão: R$ 1.100 (dia 22)
+  • Adriana: R$ 850 (dia 30) ✨ NOVO
+
+DESPESAS PRINCIPAIS (Faculdade, Internet, Luz, etc.)
+
+═══════════════════════════════════════════════════════════════
+
+💡 DICAS:
+
+  • Clique nos campos para editar
+  • Alterações são salvas automaticamente
+  • Adicione mais vendas para melhorar projeções
+  • Veja o README.md para documentação completa
+
+═══════════════════════════════════════════════════════════════
+
+🔒 PRIVACIDADE:
+
+  ✓ Todos os dados ficam no seu computador
+  ✓ Nada é enviado para servidores
+  ✓ Funciona offline
+  ✓ LocalStorage persiste dados mesmo offline
+
+═══════════════════════════════════════════════════════════════
+
+❓ PROBLEMAS?
+
+  1. Limpe o cache do navegador
+  2. Tente em outro navegador
+  3. Certifique que JavaScript está habilitado
+  4. Veja o console (F12) para erros
+
+═══════════════════════════════════════════════════════════════
+
+✉️ Desenvolvido especialmente para você!
+
+Divirta-se controlando suas finanças 💰
+═══════════════════════════════════════════════════════════════
