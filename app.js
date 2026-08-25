@@ -148,10 +148,31 @@ function renderizarDashboard() {
     tbody.innerHTML = dados.receitas.map(r => `
         <tr>
             <td>${r.nome}</td>
-            <td class="num positive">${formatarMoeda(r.valor)}</td>
-            <td><span class="badge">Dia ${r.dia}</span></td>
+            <td class="num positive editable" onclick="editarReceita(${r.id}, 'valor')" title="Clique para editar">${formatarMoeda(r.valor)}</td>
+            <td><span class="badge editable" onclick="editarReceita(${r.id}, 'dia')" title="Clique para editar">Dia ${r.dia}</span></td>
         </tr>
     `).join('');
+}
+
+function editarReceita(id, campo) {
+    const receita = dados.receitas.find(r => r.id === id);
+    if (!receita) return;
+
+    let novoValor;
+    if (campo === 'valor') {
+        novoValor = prompt(`Novo valor para ${receita.nome}:`, receita.valor);
+        if (novoValor !== null && novoValor !== '') {
+            receita.valor = parseFloat(novoValor) || receita.valor;
+        }
+    } else if (campo === 'dia') {
+        novoValor = prompt(`Novo dia do mês para ${receita.nome}:`, receita.dia);
+        if (novoValor !== null && novoValor !== '') {
+            receita.dia = parseInt(novoValor) || receita.dia;
+        }
+    }
+
+    salvarDados();
+    renderizarDashboard();
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -413,4 +434,36 @@ function renderizarProjecao() {
     document.getElementById('projTotalReceita').textContent = formatarMoeda(totalReceitaGeral);
     document.getElementById('projTotalDespesa').textContent = formatarMoeda(totalDespesaGeral);
     document.getElementById('projSaldoAcum').textContent = formatarMoeda(saldoAcum);
+}
+
+// ════════════════════════════════════════════════════════════════
+// EXPORTAÇÃO DE DADOS
+// ════════════════════════════════════════════════════════════════
+
+function exportarDados() {
+    salvarDados();
+    const dadosJSON = JSON.stringify(dados, null, 2);
+    const blob = new Blob([dadosJSON], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `controle-pessoal-${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+function importarDados(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        try {
+            dados = JSON.parse(e.target.result);
+            salvarDados();
+            location.reload();
+        } catch (err) {
+            alert('Erro ao importar arquivo: ' + err.message);
+        }
+    };
+    reader.readAsText(file);
 }

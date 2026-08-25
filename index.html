@@ -477,6 +477,18 @@
             font-size: 40px;
             margin-bottom: 16px;
         }
+
+        .editable {
+            cursor: pointer;
+            transition: all 0.2s;
+            border-radius: 4px;
+            padding: 2px 4px;
+        }
+
+        .editable:hover {
+            background: var(--bg3);
+            opacity: 0.8;
+        }
     </style>
 </head>
 <body>
@@ -497,8 +509,19 @@
     <!-- DASHBOARD -->
     <div id="dashboard" class="page active">
         <div class="container">
-            <div class="page-title">Dashboard</div>
-            <div class="page-subtitle">Resumo do seu controle financeiro</div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                <div>
+                    <div class="page-title">Dashboard</div>
+                    <div class="page-subtitle">Resumo do seu controle financeiro</div>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <button class="btn btn-secondary" onclick="exportarDados()" title="Exportar dados em JSON">💾 Exportar</button>
+                    <label class="btn btn-secondary" style="cursor: pointer; margin: 0;">
+                        📂 Importar
+                        <input type="file" id="importInput" accept=".json" onchange="importarDados(event)" style="display: none;">
+                    </label>
+                </div>
+            </div>
 
             <div class="grid">
                 <div class="card">
