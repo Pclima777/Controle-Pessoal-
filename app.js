@@ -1,497 +1,416 @@
-// ===== ESTRUTURA DE DADOS =====
-let dadosFinanceiros = {
+// ════════════════════════════════════════════════════════════════
+// CONTROLE PESSOAL - APP.JS
+// ════════════════════════════════════════════════════════════════
+
+// ── DADOS GLOBAIS
+let dados = {
     receitas: [],
     despesas: [],
+    lancamentos: {},
     vendas: []
 };
 
-// Meses para referência
-const meses = [
-    'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
-];
+const DIAS_SEMANA = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
 
-// ===== INICIALIZAÇÃO =====
-document.addEventListener('DOMContentLoaded', function() {
+// ── INICIALIZAÇÃO
+document.addEventListener('DOMContentLoaded', () => {
     carregarDados();
-    inicializarData();
-    atualizarDashboard();
-    renderReceipts();
-    renderExpenses();
-    renderVendas();
+    inicializarDatas();
+    renderizarDashboard();
+    carregarDia();
+    renderizarEdicao();
 });
 
-// ===== FUNÇÕES DE ARMAZENAMENTO =====
+// ════════════════════════════════════════════════════════════════
+// ARMAZENAMENTO
+// ════════════════════════════════════════════════════════════════
+
 function carregarDados() {
-    const dados = localStorage.getItem('financeiro');
-    if (dados) {
-        dadosFinanceiros = JSON.parse(dados);
+    const saved = localStorage.getItem('controle_pessoal_dados');
+    if (saved) {
+        dados = JSON.parse(saved);
     } else {
-        carregarDadosInicial();
+        carregarDadosIniciais();
     }
 }
 
 function salvarDados() {
-    localStorage.setItem('financeiro', JSON.stringify(dadosFinanceiros));
+    localStorage.setItem('controle_pessoal_dados', JSON.stringify(dados));
 }
 
-function carregarDadosInicial() {
-    // Receitas iniciais (baseadas na sua planilha)
-    dadosFinanceiros.receitas = [
-        { id: 1, nome: 'Gio (Salário)', valor: 1000, dia: 5, tipo: 'fixa' },
-        { id: 2, nome: 'Maria Luiza', valor: 750, dia: 10, tipo: 'aluguel' },
-        { id: 3, nome: 'De Motos', valor: 3450, dia: 10, tipo: 'aluguel' },
-        { id: 4, nome: 'Aparecida', valor: 850, dia: 15, tipo: 'aluguel' },
-        { id: 5, nome: 'Rafael', valor: 800, dia: 20, tipo: 'aluguel' },
-        { id: 6, nome: 'Vitão', valor: 1100, dia: 22, tipo: 'aluguel' },
-        { id: 7, nome: 'Adriana', valor: 850, dia: 30, tipo: 'aluguel' }
+function carregarDadosIniciais() {
+    dados.receitas = [
+        { id: 1, nome: 'Gio (Salário)', valor: 1000, dia: 5 },
+        { id: 2, nome: 'Maria Luiza', valor: 750, dia: 10 },
+        { id: 3, nome: 'De Motos', valor: 3450, dia: 10 },
+        { id: 4, nome: 'Aparecida', valor: 850, dia: 15 },
+        { id: 5, nome: 'Rafael', valor: 800, dia: 20 },
+        { id: 6, nome: 'Vitão', valor: 1100, dia: 22 },
+        { id: 7, nome: 'Adriana', valor: 850, dia: 30 }
     ];
 
-    // Despesas iniciais (resumidas da sua planilha CONTROLE)
-    dadosFinanceiros.despesas = [
-        { id: 1, descricao: 'Faculdade', valor: 2600, dia: 5, categoria: 'Educação' },
-        { id: 2, descricao: 'Vivo (Celular)', valor: 85, dia: 10, categoria: 'Telecom' },
-        { id: 3, descricao: 'Internet BH', valor: 100, dia: 15, categoria: 'Telecom' },
-        { id: 4, descricao: 'Conta de Luz', valor: 250, dia: 20, categoria: 'Utilidades' },
-        { id: 5, descricao: 'Condomínio', valor: 500, dia: 10, categoria: 'Habitação' },
-        { id: 6, descricao: 'IPTU', valor: 100, dia: 15, categoria: 'Impostos' },
-        { id: 7, descricao: 'Seguro', valor: 210, dia: 25, categoria: 'Seguros' },
-        { id: 8, descricao: 'Cartão Nubank', valor: 2000, dia: 5, categoria: 'Cartão' },
-        { id: 9, descricao: 'Cartão Bradesco', valor: 3500, dia: 10, categoria: 'Cartão' },
-        { id: 10, descricao: 'Cartão Sicoob', valor: 2400, dia: 15, categoria: 'Cartão' }
+    dados.despesas = [
+        { id: 1, descricao: 'Faculdade', valor: 2600, dia: 5 },
+        { id: 2, descricao: 'Vivo', valor: 85, dia: 10 },
+        { id: 3, descricao: 'Internet BH', valor: 100, dia: 15 },
+        { id: 4, descricao: 'Conta de Luz', valor: 250, dia: 20 },
+        { id: 5, descricao: 'Condomínio', valor: 500, dia: 10 },
+        { id: 6, descricao: 'IPTU', valor: 100, dia: 15 },
+        { id: 7, descricao: 'Seguro', valor: 210, dia: 25 },
+        { id: 8, descricao: 'Cartão Nubank', valor: 2000, dia: 5 },
+        { id: 9, descricao: 'Cartão Bradesco', valor: 3500, dia: 10 },
+        { id: 10, descricao: 'Cartão Sicoob', valor: 2400, dia: 15 }
     ];
 
-    // Vendas iniciais (exemplo)
-    dadosFinanceiros.vendas = [];
-
     salvarDados();
 }
 
-// ===== FUNÇÕES DE NAVEGAÇÃO =====
-function openTab(evt, tabName) {
-    const tabcontent = document.querySelectorAll('.tab-content');
-    tabcontent.forEach(tab => tab.classList.remove('active'));
+// ════════════════════════════════════════════════════════════════
+// NAVEGAÇÃO
+// ════════════════════════════════════════════════════════════════
 
-    const tabbuttons = document.querySelectorAll('.tab-button');
-    tabbuttons.forEach(btn => btn.classList.remove('active'));
+function switchPage(pageId) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
 
-    document.getElementById(tabName).classList.add('active');
-    evt.currentTarget.classList.add('active');
+    document.getElementById(pageId).classList.add('active');
+    event.target.classList.add('active');
 
-    if (tabName === 'projections') {
-        atualizarProjecoes();
-    } else if (tabName === 'relatorios') {
-        atualizarRelatorios();
+    if (pageId === 'projecao') {
+        renderizarProjecao();
+    } else if (pageId === 'edicao') {
+        renderizarEdicao();
     }
 }
 
-// ===== DASHBOARD =====
-function atualizarDashboard() {
-    const mesAtual = new Date().getMonth() + 1;
-    const anoAtual = new Date().getFullYear();
+// ════════════════════════════════════════════════════════════════
+// FORMATAÇÃO
+// ════════════════════════════════════════════════════════════════
 
-    // Calcular receitas do mês
-    const totalReceitaMes = calcularReceitaMes(mesAtual);
-    const totalDespesaMes = calcularDespesaMes(mesAtual);
-    const saldo = totalReceitaMes - totalDespesaMes;
-
-    // Receita fixa mensal
-    const receitaFixa = dadosFinanceiros.receitas
-        .reduce((sum, r) => sum + r.valor, 0);
-
-    // Média de vendas (fictícia por enquanto)
-    const mediaVendas = 3800; // Baseado na planilha
-
-    document.getElementById('totalReceitaMes').textContent = formatarMoeda(totalReceitaMes);
-    document.getElementById('totalDespesaMes').textContent = formatarMoeda(totalDespesaMes);
-    document.getElementById('saldoMes').textContent = formatarMoeda(saldo);
-    document.getElementById('receitaFixaMensal').textContent = formatarMoeda(receitaFixa);
-    document.getElementById('receitaLojaMedia').textContent = formatarMoeda(mediaVendas);
-    document.getElementById('projecaoAnual').textContent = formatarMoeda((receitaFixa + mediaVendas) * 12);
-}
-
-function calcularReceitaMes(mes) {
-    const vendaDocumento = dadosFinanceiros.vendas
-        .filter(v => new Date(v.data).getMonth() + 1 === mes)
-        .reduce((sum, v) => sum + v.valorVenda, 0);
-
-    const receitaFixa = dadosFinanceiros.receitas
-        .reduce((sum, r) => sum + r.valor, 0);
-
-    const mediaVendas = 3800 * (mes <= 12 ? 1 : 0);
-
-    return receitaFixa + mediaVendas + vendaDocumento;
-}
-
-function calcularDespesaMes(mes) {
-    return dadosFinanceiros.despesas
-        .reduce((sum, d) => sum + d.valor, 0);
-}
-
-// ===== RECEITAS - INQUILINOS =====
-function renderReceipts() {
-    const tbody = document.getElementById('receitasBody');
-    tbody.innerHTML = '';
-
-    dadosFinanceiros.receitas.forEach(receita => {
-        const row = document.createElement('tr');
-        row.className = 'edit-row';
-        row.innerHTML = `
-            <td><input type="text" value="${receita.nome}" onchange="editarReceita(${receita.id}, 'nome', this.value)"></td>
-            <td><input type="number" value="${receita.valor}" onchange="editarReceita(${receita.id}, 'valor', parseFloat(this.value))" step="0.01"></td>
-            <td><input type="number" value="${receita.dia}" min="1" max="31" onchange="editarReceita(${receita.id}, 'dia', parseInt(this.value))"></td>
-            <td><span class="badge badge-fixed">${receita.tipo === 'aluguel' ? '🏠 Aluguel' : '💼 Salário'}</span></td>
-            <td>
-                <button class="btn btn-secondary btn-small" onclick="deletarReceita(${receita.id})">🗑️ Deletar</button>
-            </td>
-        `;
-        tbody.appendChild(row);
-    });
-
-    atualizarTotalReceitas();
-}
-
-function editarReceita(id, campo, valor) {
-    const receita = dadosFinanceiros.receitas.find(r => r.id === id);
-    if (receita) {
-        receita[campo] = valor;
-        salvarDados();
-        renderReceipts();
-        atualizarDashboard();
-        mostrarSucesso('Receita atualizada com sucesso!', 'successMessage');
-    }
-}
-
-function deletarReceita(id) {
-    if (confirm('Tem certeza que deseja deletar esta receita?')) {
-        dadosFinanceiros.receitas = dadosFinanceiros.receitas.filter(r => r.id !== id);
-        salvarDados();
-        renderReceipts();
-        atualizarDashboard();
-        mostrarSucesso('Receita deletada com sucesso!', 'successMessage');
-    }
-}
-
-function showAddReceitaForm() {
-    const nome = prompt('Nome do inquilino:');
-    if (!nome) return;
-
-    const valor = parseFloat(prompt('Valor (R$):'));
-    if (isNaN(valor)) return;
-
-    const dia = parseInt(prompt('Dia do pagamento (1-31):'));
-    if (isNaN(dia) || dia < 1 || dia > 31) return;
-
-    const novaReceita = {
-        id: Math.max(...dadosFinanceiros.receitas.map(r => r.id), 0) + 1,
-        nome,
-        valor,
-        dia,
-        tipo: 'aluguel'
-    };
-
-    dadosFinanceiros.receitas.push(novaReceita);
-    salvarDados();
-    renderReceipts();
-    atualizarDashboard();
-    mostrarSucesso('Receita adicionada com sucesso!', 'successMessage');
-}
-
-function atualizarTotalReceitas() {
-    const total = dadosFinanceiros.receitas.reduce((sum, r) => sum + r.valor, 0);
-    document.getElementById('totalReceitaFixa').textContent = formatarMoeda(total);
-}
-
-// ===== DESPESAS =====
-function renderExpenses() {
-    const tbody = document.getElementById('despesasBody');
-    tbody.innerHTML = '';
-
-    dadosFinanceiros.despesas.forEach(despesa => {
-        const row = document.createElement('tr');
-        row.className = 'edit-row';
-        row.innerHTML = `
-            <td><input type="text" value="${despesa.descricao}" onchange="editarDespesa(${despesa.id}, 'descricao', this.value)"></td>
-            <td><input type="number" value="${despesa.valor}" onchange="editarDespesa(${despesa.id}, 'valor', parseFloat(this.value))" step="0.01"></td>
-            <td><input type="number" value="${despesa.dia}" min="1" max="31" onchange="editarDespesa(${despesa.id}, 'dia', parseInt(this.value))"></td>
-            <td><input type="text" value="${despesa.categoria}" onchange="editarDespesa(${despesa.id}, 'categoria', this.value)"></td>
-            <td>
-                <button class="btn btn-secondary btn-small" onclick="deletarDespesa(${despesa.id})">🗑️ Deletar</button>
-            </td>
-        `;
-        tbody.appendChild(row);
-    });
-
-    atualizarTotalDespesas();
-}
-
-function editarDespesa(id, campo, valor) {
-    const despesa = dadosFinanceiros.despesas.find(d => d.id === id);
-    if (despesa) {
-        despesa[campo] = valor;
-        salvarDados();
-        renderExpenses();
-        atualizarDashboard();
-        mostrarSucesso('Despesa atualizada com sucesso!', 'successMessage2');
-    }
-}
-
-function deletarDespesa(id) {
-    if (confirm('Tem certeza que deseja deletar esta despesa?')) {
-        dadosFinanceiros.despesas = dadosFinanceiros.despesas.filter(d => d.id !== id);
-        salvarDados();
-        renderExpenses();
-        atualizarDashboard();
-        mostrarSucesso('Despesa deletada com sucesso!', 'successMessage2');
-    }
-}
-
-function showAddDespesaForm() {
-    const descricao = prompt('Descrição da despesa:');
-    if (!descricao) return;
-
-    const valor = parseFloat(prompt('Valor (R$):'));
-    if (isNaN(valor)) return;
-
-    const dia = parseInt(prompt('Dia do pagamento (1-31):'));
-    if (isNaN(dia) || dia < 1 || dia > 31) return;
-
-    const categoria = prompt('Categoria:');
-    if (!categoria) return;
-
-    const novaDespesa = {
-        id: Math.max(...dadosFinanceiros.despesas.map(d => d.id), 0) + 1,
-        descricao,
-        valor,
-        dia,
-        categoria
-    };
-
-    dadosFinanceiros.despesas.push(novaDespesa);
-    salvarDados();
-    renderExpenses();
-    atualizarDashboard();
-    mostrarSucesso('Despesa adicionada com sucesso!', 'successMessage2');
-}
-
-function atualizarTotalDespesas() {
-    const total = dadosFinanceiros.despesas.reduce((sum, d) => sum + d.valor, 0);
-    document.getElementById('totalDespesas').textContent = formatarMoeda(total);
-}
-
-// ===== VENDAS - LOJA VAPE =====
-function inicializarData() {
-    const today = new Date();
-    const ano = today.getFullYear();
-    const mes = String(today.getMonth() + 1).padStart(2, '0');
-    document.getElementById('vendaMesAno').value = `${ano}-${mes}`;
-}
-
-function renderVendas() {
-    carregarVendas();
-}
-
-function carregarVendas() {
-    const mesAno = document.getElementById('vendaMesAno').value;
-    const [ano, mes] = mesAno.split('-');
-
-    const tbody = document.getElementById('vendasBody');
-    tbody.innerHTML = '';
-
-    const vendasFiltradas = dadosFinanceiros.vendas.filter(v => {
-        const dataVenda = new Date(v.data);
-        return dataVenda.getFullYear() === parseInt(ano) &&
-               dataVenda.getMonth() + 1 === parseInt(mes);
-    });
-
-    if (vendasFiltradas.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" class="no-data">Nenhuma venda registrada neste período</td></tr>';
-    }
-
-    vendasFiltradas.forEach(venda => {
-        const lucro = venda.valorVenda - venda.valorCompra;
-        const row = document.createElement('tr');
-        row.className = 'edit-row';
-        row.innerHTML = `
-            <td><input type="date" value="${venda.data}" onchange="editarVenda(${venda.id}, 'data', this.value)"></td>
-            <td><input type="text" value="${venda.produto}" onchange="editarVenda(${venda.id}, 'produto', this.value)"></td>
-            <td><input type="number" value="${venda.valorCompra}" onchange="editarVenda(${venda.id}, 'valorCompra', parseFloat(this.value))" step="0.01"></td>
-            <td><input type="number" value="${venda.valorVenda}" onchange="editarVenda(${venda.id}, 'valorVenda', parseFloat(this.value))" step="0.01"></td>
-            <td><strong class="positive">R$ ${formatarNumero(lucro)}</strong></td>
-            <td><input type="text" value="${venda.cliente}" onchange="editarVenda(${venda.id}, 'cliente', this.value)"></td>
-            <td>
-                <button class="btn btn-secondary btn-small" onclick="deletarVenda(${venda.id})">🗑️ Deletar</button>
-            </td>
-        `;
-        tbody.appendChild(row);
-    });
-
-    atualizarTotaisVendas(vendasFiltradas);
-}
-
-function editarVenda(id, campo, valor) {
-    const venda = dadosFinanceiros.vendas.find(v => v.id === id);
-    if (venda) {
-        if (campo === 'valorCompra' || campo === 'valorVenda') {
-            venda[campo] = parseFloat(valor);
-        } else {
-            venda[campo] = valor;
-        }
-        salvarDados();
-        carregarVendas();
-        atualizarDashboard();
-        mostrarSucesso('Venda atualizada com sucesso!', 'successMessage3');
-    }
-}
-
-function deletarVenda(id) {
-    if (confirm('Tem certeza que deseja deletar esta venda?')) {
-        dadosFinanceiros.vendas = dadosFinanceiros.vendas.filter(v => v.id !== id);
-        salvarDados();
-        carregarVendas();
-        atualizarDashboard();
-        mostrarSucesso('Venda deletada com sucesso!', 'successMessage3');
-    }
-}
-
-function showAddVendaForm() {
-    const data = prompt('Data (YYYY-MM-DD):');
-    if (!data) return;
-
-    const produto = prompt('Produto:');
-    if (!produto) return;
-
-    const valorCompra = parseFloat(prompt('Valor de Compra (R$):'));
-    if (isNaN(valorCompra)) return;
-
-    const valorVenda = parseFloat(prompt('Valor de Venda (R$):'));
-    if (isNaN(valorVenda)) return;
-
-    const cliente = prompt('Cliente (opcional):', '');
-
-    const novaVenda = {
-        id: Math.max(...dadosFinanceiros.vendas.map(v => v.id), 0) + 1,
-        data,
-        produto,
-        valorCompra,
-        valorVenda,
-        cliente: cliente || 'N/A'
-    };
-
-    dadosFinanceiros.vendas.push(novaVenda);
-    salvarDados();
-    carregarVendas();
-    atualizarDashboard();
-    mostrarSucesso('Venda registrada com sucesso!', 'successMessage3');
-}
-
-function atualizarTotaisVendas(vendas) {
-    const totalVendas = vendas.reduce((sum, v) => sum + v.valorVenda, 0);
-    const totalLucro = vendas.reduce((sum, v) => sum + (v.valorVenda - v.valorCompra), 0);
-    const mediaVenda = vendas.length > 0 ? totalVendas / vendas.length : 0;
-
-    document.getElementById('totalVendas').textContent = formatarMoeda(totalVendas);
-    document.getElementById('totalLucro').textContent = formatarMoeda(totalLucro);
-    document.getElementById('mediaVenda').textContent = formatarMoeda(mediaVenda);
-    document.getElementById('qtdVendas').textContent = vendas.length;
-}
-
-// ===== PROJEÇÕES =====
-function atualizarProjecoes() {
-    const ano = parseInt(document.getElementById('anoProjecao').value);
-    const tbody = document.getElementById('projecoesBody');
-    tbody.innerHTML = '';
-
-    let saldoAcumulado = 0;
-    const receitaFixaMensal = dadosFinanceiros.receitas.reduce((sum, r) => sum + r.valor, 0);
-    const receitaLojaMensal = 3800; // Média da loja
-    const despesaMensal = dadosFinanceiros.despesas.reduce((sum, d) => sum + d.valor, 0);
-
-    for (let mes = 1; mes <= 12; mes++) {
-        const totalReceita = receitaFixaMensal + receitaLojaMensal;
-        const totalDespesa = despesaMensal;
-        const saldoMes = totalReceita - totalDespesa;
-        saldoAcumulado += saldoMes;
-
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td><strong>${meses[mes - 1]}</strong></td>
-            <td>${formatarMoeda(receitaFixaMensal)}</td>
-            <td>${formatarMoeda(receitaLojaMensal)}</td>
-            <td>${formatarMoeda(totalReceita)}</td>
-            <td>${formatarMoeda(totalDespesa)}</td>
-            <td class="${saldoMes >= 0 ? 'positive' : 'negative'}">
-                <strong>${formatarMoeda(saldoMes)}</strong>
-            </td>
-            <td class="${saldoAcumulado >= 0 ? 'positive' : 'negative'}">
-                <strong>${formatarMoeda(saldoAcumulado)}</strong>
-            </td>
-        `;
-        tbody.appendChild(row);
-    }
-}
-
-// ===== RELATÓRIOS =====
-function atualizarRelatorios() {
-    const receitaFixa = dadosFinanceiros.receitas.reduce((sum, r) => sum + r.valor, 0);
-    const receitaLojaMedia = 3800;
-    const despesaMensal = dadosFinanceiros.despesas.reduce((sum, d) => sum + d.valor, 0);
-
-    const receitaAnual = (receitaFixa + receitaLojaMedia) * 12;
-    const despesaAnual = despesaMensal * 12;
-    const lucroAnual = receitaAnual - despesaAnual;
-
-    document.getElementById('receitaAnualProj').textContent = formatarMoeda(receitaAnual);
-    document.getElementById('despesaAnualProj').textContent = formatarMoeda(despesaAnual);
-    document.getElementById('lucroAnualProj').textContent = formatarMoeda(lucroAnual);
-    document.getElementById('mediaReceitaFixa').textContent = formatarMoeda(receitaFixa);
-
-    // Composição de receita
-    const alugueis = dadosFinanceiros.receitas
-        .filter(r => r.tipo === 'aluguel')
-        .reduce((sum, r) => sum + r.valor, 0);
-    const salario = dadosFinanceiros.receitas
-        .filter(r => r.tipo === 'fixa')
-        .reduce((sum, r) => sum + r.valor, 0);
-    const lojaVape = receitaLojaMedia;
-
-    const totalReceita = alugueis + salario + lojaVape;
-
-    document.getElementById('totalAlugueis').textContent = formatarMoeda(alugueis);
-    document.getElementById('percAlugueis').textContent =
-        totalReceita > 0 ? ((alugueis / totalReceita) * 100).toFixed(1) + '%' : '0%';
-
-    document.getElementById('totalSalario').textContent = formatarMoeda(salario);
-    document.getElementById('percSalario').textContent =
-        totalReceita > 0 ? ((salario / totalReceita) * 100).toFixed(1) + '%' : '0%';
-
-    document.getElementById('totalLojaVape').textContent = formatarMoeda(lojaVape);
-    document.getElementById('percLojaVape').textContent =
-        totalReceita > 0 ? ((lojaVape / totalReceita) * 100).toFixed(1) + '%' : '0%';
-}
-
-// ===== UTILITÁRIOS =====
 function formatarMoeda(valor) {
     return new Intl.NumberFormat('pt-BR', {
         style: 'currency',
-        currency: 'BRL'
+        currency: 'BRL',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
     }).format(valor);
 }
 
-function formatarNumero(valor) {
-    return valor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+function formatarData(data) {
+    if (typeof data === 'string') {
+        const [ano, mes, dia] = data.split('-');
+        return `${dia}/${mes}/${ano}`;
+    }
+    return data.toLocaleDateString('pt-BR');
 }
 
-function mostrarSucesso(mensagem, elementId) {
-    const element = document.getElementById(elementId);
-    element.textContent = mensagem;
-    element.classList.add('show');
-    setTimeout(() => {
-        element.classList.remove('show');
-    }, 3000);
+// ════════════════════════════════════════════════════════════════
+// INICIALIZAR DATAS
+// ════════════════════════════════════════════════════════════════
+
+function inicializarDatas() {
+    const hoje = new Date();
+    const isoHoje = hoje.toISOString().split('T')[0];
+
+    document.getElementById('lancData').value = isoHoje;
+    document.getElementById('filtroDataDe').valueAsDate = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+    document.getElementById('filtroDataAte').value = isoHoje;
+    document.getElementById('projDataDe').value = isoHoje;
+    document.getElementById('projDataAte').value = isoHoje;
 }
 
-function exportarRelatorio() {
-    alert('Funcionalidade de exportação em desenvolvimento!');
-    // Implementar exportação para Excel aqui
+function preencherPeriodoAtual() {
+    const hoje = new Date();
+    const primeiroDia = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+    const ultimoDia = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
+
+    document.getElementById('projDataDe').value = primeiroDia.toISOString().split('T')[0];
+    document.getElementById('projDataAte').value = ultimoDia.toISOString().split('T')[0];
+    renderizarProjecao();
+}
+
+// ════════════════════════════════════════════════════════════════
+// DASHBOARD
+// ════════════════════════════════════════════════════════════════
+
+function renderizarDashboard() {
+    const totalReceitaFixa = dados.receitas.reduce((sum, r) => sum + r.valor, 0);
+    const totalDespesa = dados.despesas.reduce((sum, d) => sum + d.valor, 0);
+    const receitaLoja = 3800; // Média estimada
+    const saldo = totalReceitaFixa + receitaLoja - totalDespesa;
+
+    document.getElementById('dashReceitaFixa').textContent = formatarMoeda(totalReceitaFixa);
+    document.getElementById('dashReceitaLoja').textContent = formatarMoeda(receitaLoja);
+    document.getElementById('dashDespesa').textContent = formatarMoeda(totalDespesa);
+    document.getElementById('dashSaldo').textContent = formatarMoeda(saldo);
+
+    const tbody = document.getElementById('dashReceitasBody');
+    tbody.innerHTML = dados.receitas.map(r => `
+        <tr>
+            <td>${r.nome}</td>
+            <td class="num positive">${formatarMoeda(r.valor)}</td>
+            <td><span class="badge">Dia ${r.dia}</span></td>
+        </tr>
+    `).join('');
+}
+
+// ════════════════════════════════════════════════════════════════
+// LANÇAMENTO
+// ════════════════════════════════════════════════════════════════
+
+function carregarDia() {
+    const dataInput = document.getElementById('lancData').value;
+    const data = new Date(dataInput + 'T00:00:00');
+
+    const nomeDia = data.toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    document.getElementById('lancDataInfo').textContent = nomeDia;
+
+    const lancamento = dados.lancamentos[dataInput] || { pix: 0, dinheiro: 0, credito: 0, debito: 0, saidas: [] };
+
+    document.getElementById('lancPix').value = lancamento.pix || '';
+    document.getElementById('lancDinheiro').value = lancamento.dinheiro || '';
+    document.getElementById('lancCredito').value = lancamento.credito || '';
+    document.getElementById('lancDebito').value = lancamento.debito || '';
+
+    const saidasList = document.getElementById('lancSaidasList');
+    saidasList.innerHTML = '';
+    (lancamento.saidas || []).forEach(saida => adicionarSaidaRow(saida.descricao, saida.valor));
+
+    calcularSaldo();
+    renderizarResumo();
+}
+
+function adicionarSaida() {
+    adicionarSaidaRow('', '');
+}
+
+function adicionarSaidaRow(descricao = '', valor = '') {
+    const id = 'saida_' + Date.now();
+    const html = `
+        <div class="list-item" id="${id}">
+            <div class="list-item-content" style="flex: 1;">
+                <input type="text" placeholder="Descrição" value="${descricao}" style="width: 100%; background: transparent; border: none; color: var(--text); margin-bottom: 6px;" onchange="calcularSaldo()">
+                <input type="number" placeholder="0,00" value="${valor}" step="0.01" min="0" style="width: 100%; background: transparent; border: none; color: var(--text); font-family: 'Courier New';" onchange="calcularSaldo()">
+            </div>
+            <button class="btn btn-secondary btn-small btn-icon" onclick="document.getElementById('${id}').remove(); calcularSaldo()">✕</button>
+        </div>
+    `;
+    document.getElementById('lancSaidasList').insertAdjacentHTML('beforeend', html);
+}
+
+function coletarSaidas() {
+    const saidas = [];
+    document.querySelectorAll('#lancSaidasList .list-item').forEach(item => {
+        const inputs = item.querySelectorAll('input');
+        const descricao = inputs[0].value.trim();
+        const valor = parseFloat(inputs[1].value) || 0;
+        if (descricao || valor > 0) {
+            saidas.push({ descricao, valor });
+        }
+    });
+    return saidas;
+}
+
+function calcularSaldo() {
+    const pix = parseFloat(document.getElementById('lancPix').value) || 0;
+    const dinheiro = parseFloat(document.getElementById('lancDinheiro').value) || 0;
+    const credito = parseFloat(document.getElementById('lancCredito').value) || 0;
+    const debito = parseFloat(document.getElementById('lancDebito').value) || 0;
+
+    const totalEntrada = pix + dinheiro + credito + debito;
+    const saidas = coletarSaidas();
+    const totalSaida = saidas.reduce((sum, s) => sum + s.valor, 0);
+    const resultado = totalEntrada - totalSaida;
+
+    document.getElementById('lancTotalEntrada').textContent = formatarMoeda(totalEntrada);
+    document.getElementById('lancTotalSaida').textContent = formatarMoeda(totalSaida);
+    document.getElementById('lancResultado').textContent = formatarMoeda(resultado);
+
+    renderizarResumo();
+}
+
+function renderizarResumo() {
+    const tbody = document.getElementById('lancResumoBody');
+    const pix = parseFloat(document.getElementById('lancPix').value) || 0;
+    const dinheiro = parseFloat(document.getElementById('lancDinheiro').value) || 0;
+    const credito = parseFloat(document.getElementById('lancCredito').value) || 0;
+    const debito = parseFloat(document.getElementById('lancDebito').value) || 0;
+    const saidas = coletarSaidas();
+
+    let html = '';
+
+    if (pix > 0) html += `<tr><td>Pix</td><td class="num positive">+${formatarMoeda(pix)}</td><td><span class="badge badge-accent">Entrada</span></td></tr>`;
+    if (dinheiro > 0) html += `<tr><td>Dinheiro</td><td class="num positive">+${formatarMoeda(dinheiro)}</td><td><span class="badge badge-accent">Entrada</span></td></tr>`;
+    if (credito > 0) html += `<tr><td>Crédito</td><td class="num positive">+${formatarMoeda(credito)}</td><td><span class="badge badge-accent">Entrada</span></td></tr>`;
+    if (debito > 0) html += `<tr><td>Débito</td><td class="num positive">+${formatarMoeda(debito)}</td><td><span class="badge badge-accent">Entrada</span></td></tr>`;
+
+    saidas.forEach(s => {
+        html += `<tr><td>${s.descricao}</td><td class="num negative">-${formatarMoeda(s.valor)}</td><td><span class="badge badge-danger">Saída</span></td></tr>`;
+    });
+
+    if (!html) {
+        html = '<tr><td colspan="3" style="text-align: center; color: var(--text-secondary); padding: 20px;">Nenhum lançamento</td></tr>';
+    }
+
+    tbody.innerHTML = html;
+}
+
+function salvarLancamento() {
+    const data = document.getElementById('lancData').value;
+    const pix = parseFloat(document.getElementById('lancPix').value) || 0;
+    const dinheiro = parseFloat(document.getElementById('lancDinheiro').value) || 0;
+    const credito = parseFloat(document.getElementById('lancCredito').value) || 0;
+    const debito = parseFloat(document.getElementById('lancDebito').value) || 0;
+    const saidas = coletarSaidas().map(s => ({ descricao: s.descricao, valor: s.valor }));
+
+    dados.lancamentos[data] = { pix, dinheiro, credito, debito, saidas };
+    salvarDados();
+
+    alert('✓ Lançamento salvo com sucesso!');
+    renderizarEdicao();
+}
+
+// ════════════════════════════════════════════════════════════════
+// EDIÇÃO
+// ════════════════════════════════════════════════════════════════
+
+function renderizarEdicao() {
+    const dataDe = document.getElementById('filtroDataDe').value;
+    const dataAte = document.getElementById('filtroDataAte').value;
+
+    let lancamentos = Object.keys(dados.lancamentos).sort();
+
+    if (dataDe) lancamentos = lancamentos.filter(d => d >= dataDe);
+    if (dataAte) lancamentos = lancamentos.filter(d => d <= dataAte);
+
+    let totalEntrada = 0, totalSaida = 0, saldoAcum = 0;
+    const tbody = document.getElementById('edicaoTableBody');
+    tbody.innerHTML = '';
+
+    lancamentos.forEach(data => {
+        const lanc = dados.lancamentos[data];
+        const entrada = (lanc.pix || 0) + (lanc.dinheiro || 0) + (lanc.credito || 0) + (lanc.debito || 0);
+        const saida = (lanc.saidas || []).reduce((sum, s) => sum + s.valor, 0);
+        const resultado = entrada - saida;
+
+        totalEntrada += entrada;
+        totalSaida += saida;
+        saldoAcum += resultado;
+
+        const dataFormatada = formatarData(data);
+        const dataObj = new Date(data + 'T00:00:00');
+        const dia = DIAS_SEMANA[dataObj.getDay()];
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${dataFormatada} (${dia})</td>
+            <td class="num positive">${formatarMoeda(entrada)}</td>
+            <td class="num negative">${formatarMoeda(saida)}</td>
+            <td class="num" style="color: ${resultado >= 0 ? 'var(--accent)' : 'var(--danger)'}">${formatarMoeda(resultado)}</td>
+            <td>
+                <button class="btn btn-secondary btn-small" onclick="editarDia('${data}')">Editar</button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+
+    document.getElementById('edicaoTotalEntrada').textContent = formatarMoeda(totalEntrada);
+    document.getElementById('edicaoTotalSaida').textContent = formatarMoeda(totalSaida);
+    document.getElementById('edicaoSaldo').textContent = formatarMoeda(saldoAcum);
+}
+
+function editarDia(data) {
+    document.getElementById('lancData').value = data;
+    switchPage('lancamento');
+    carregarDia();
+}
+
+function limparFiltros() {
+    document.getElementById('filtroDataDe').value = '';
+    document.getElementById('filtroDataAte').value = '';
+    renderizarEdicao();
+}
+
+// ════════════════════════════════════════════════════════════════
+// PROJEÇÃO
+// ════════════════════════════════════════════════════════════════
+
+function renderizarProjecao() {
+    const dataDe = document.getElementById('projDataDe').value;
+    const dataAte = document.getElementById('projDataAte').value;
+
+    if (!dataDe || !dataAte) return;
+
+    const diaInicio = new Date(dataDe + 'T00:00:00');
+    const diaFim = new Date(dataAte + 'T00:00:00');
+
+    const dias = [];
+    let saldoAcum = 0;
+    let totalReceitaGeral = 0;
+    let totalDespesaGeral = 0;
+
+    for (let d = new Date(diaInicio); d <= diaFim; d.setDate(d.getDate() + 1)) {
+        const isoData = d.toISOString().split('T')[0];
+        const dataObj = new Date(d);
+        const dia = dataObj.getDate();
+
+        // Receitas fixas
+        let receita = 0;
+        dados.receitas.forEach(r => {
+            if (r.dia === dia) {
+                receita += r.valor;
+            }
+        });
+
+        // Despesas fixas
+        let despesa = 0;
+        dados.despesas.forEach(d => {
+            if (d.dia === dia) {
+                despesa += d.valor;
+            }
+        });
+
+        // Lançamentos reais
+        const lanc = dados.lancamentos[isoData];
+        if (lanc) {
+            const entrada = (lanc.pix || 0) + (lanc.dinheiro || 0) + (lanc.credito || 0) + (lanc.debito || 0);
+            const saida = (lanc.saidas || []).reduce((sum, s) => sum + s.valor, 0);
+            receita += entrada;
+            despesa += saida;
+        }
+
+        const saldoDia = receita - despesa;
+        saldoAcum += saldoDia;
+
+        totalReceitaGeral += receita;
+        totalDespesaGeral += despesa;
+
+        dias.push({
+            data: isoData,
+            dataFormatada: formatarData(isoData),
+            dia: DIAS_SEMANA[dataObj.getDay()],
+            receita,
+            despesa,
+            saldoDia,
+            saldoAcum
+        });
+    }
+
+    // Renderizar tabela
+    const tbody = document.getElementById('projecaoTableBody');
+    tbody.innerHTML = dias.map(d => `
+        <tr>
+            <td>${d.dataFormatada}</td>
+            <td>${d.dia}</td>
+            <td class="num positive">${formatarMoeda(d.receita)}</td>
+            <td class="num negative">${formatarMoeda(d.despesa)}</td>
+            <td class="num" style="color: ${d.saldoDia >= 0 ? 'var(--accent)' : 'var(--danger)'};">${formatarMoeda(d.saldoDia)}</td>
+            <td class="num" style="color: ${d.saldoAcum >= 0 ? 'var(--accent)' : 'var(--danger)'};">${formatarMoeda(d.saldoAcum)}</td>
+        </tr>
+    `).join('');
+
+    // Atualizar totais
+    document.getElementById('projTotalReceita').textContent = formatarMoeda(totalReceitaGeral);
+    document.getElementById('projTotalDespesa').textContent = formatarMoeda(totalDespesaGeral);
+    document.getElementById('projSaldoAcum').textContent = formatarMoeda(saldoAcum);
 }
