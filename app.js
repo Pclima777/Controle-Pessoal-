@@ -45,6 +45,13 @@ function salvarDados() {
     localStorage.removeItem('controle_pessoal_v2');
 }
 
+function reiniciarApp() {
+    if (confirm('Deseja reiniciar o aplicativo e carregar os dados iniciais?')) {
+        localStorage.clear();
+        location.reload();
+    }
+}
+
 function carregarDadosIniciais() {
     dados.receitas = [
         { id: 1, nome: 'Gio', valor: 1000, dia: 5 },
