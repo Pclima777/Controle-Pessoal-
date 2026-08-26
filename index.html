@@ -538,25 +538,8 @@
                     </div>
 
                     <div class="form-group">
-                        <div class="form-label">Entradas</div>
-                        <div class="entry-grid">
-                            <div class="entry-box">
-                                <div class="entry-label">Pix</div>
-                                <input type="number" id="vapePix" class="entry-input" step="0.01" min="0" placeholder="0" oninput="calcularVape()">
-                            </div>
-                            <div class="entry-box">
-                                <div class="entry-label">Dinheiro</div>
-                                <input type="number" id="vapeDinheiro" class="entry-input" step="0.01" min="0" placeholder="0" oninput="calcularVape()">
-                            </div>
-                            <div class="entry-box">
-                                <div class="entry-label">Crédito</div>
-                                <input type="number" id="vapeCredito" class="entry-input" step="0.01" min="0" placeholder="0" oninput="calcularVape()">
-                            </div>
-                            <div class="entry-box">
-                                <div class="entry-label">Débito</div>
-                                <input type="number" id="vapeDebito" class="entry-input" step="0.01" min="0" placeholder="0" oninput="calcularVape()">
-                            </div>
-                        </div>
+                        <div class="form-label">Valor Total de Entradas</div>
+                        <input type="number" id="vapeEntrada" class="entry-input" step="0.01" min="0" placeholder="0" oninput="calcularVape()" style="width: 100%; font-size: 16px; padding: 12px;">
                     </div>
 
                     <div class="form-group">
@@ -691,9 +674,11 @@
                         <thead>
                             <tr>
                                 <th>Produto</th>
-                                <th class="num">Qtd Atual</th>
-                                <th class="num">Preço Unit.</th>
-                                <th class="num">Valor Total</th>
+                                <th class="num">Qtd</th>
+                                <th class="num">Preço Compra</th>
+                                <th class="num">Preço Venda</th>
+                                <th class="num">Lucro %</th>
+                                <th class="num">Lucro R$</th>
                                 <th>Ações</th>
                             </tr>
                         </thead>
@@ -706,8 +691,9 @@
             <div style="margin-top: 24px; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
                 <input type="text" id="novoProdutoNome" placeholder="Nome do produto">
                 <input type="number" id="novoProdutoQtd" placeholder="Quantidade" min="0" step="1">
-                <input type="number" id="novoProdutoPreco" placeholder="Preço unitário" min="0" step="0.01">
-                <button class="btn btn-primary" onclick="adicionarProduto()">+ Adicionar Produto</button>
+                <input type="number" id="novoProdutoPrecoCompra" placeholder="Preço de compra" min="0" step="0.01">
+                <input type="number" id="novoProdutoPrecoVenda" placeholder="Preço de venda" min="0" step="0.01">
+                <button class="btn btn-primary" onclick="adicionarProduto()" style="grid-column: 1 / -1;">+ Adicionar Produto</button>
             </div>
         </div>
     </div>
