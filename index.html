@@ -455,6 +455,11 @@
         .editable:hover {
             background: var(--bg3);
         }
+
+        .margin-positive {
+            color: var(--gr);
+            font-weight: 600;
+        }
     </style>
 </head>
 <body>
@@ -545,26 +550,34 @@
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
                     <!-- Esquerda: Formulário de Venda -->
                     <div class="form-col" style="height: fit-content;">
-                        <h3 style="margin-bottom: 16px; font-size: 13px; text-transform: uppercase; color: var(--text-secondary);">Registrar Venda Rápida</h3>
+                        <h3 style="margin-bottom: 16px; font-size: 13px; text-transform: uppercase; color: var(--text-secondary);">Registrar Venda</h3>
+
+                        <div class="form-group">
+                            <div class="form-label">Cidade</div>
+                            <select id="vapeCidade" onchange="carregarDiaVape()" style="width: 100%;">
+                                <option value="BH">BH</option>
+                                <option value="Santa Maria">Santa Maria</option>
+                            </select>
+                        </div>
 
                         <div class="form-group">
                             <div class="form-label">Produto</div>
-                            <select id="vapeProdutoVenda" style="width: 100%;">
-                                <option value="">Selecione um produto</option>
+                            <select id="vapeProduto" onchange="preencherPreco()" style="width: 100%;">
+                                <option value="">Selecione...</option>
                             </select>
                         </div>
 
                         <div class="form-group">
                             <div class="form-label">Quantidade</div>
-                            <input type="number" id="vapeQtdVenda" class="entry-input" min="1" value="1" placeholder="1" style="width: 100%; font-size: 16px; padding: 12px;">
+                            <input type="number" id="vapeQtd" class="entry-input" min="1" value="1" placeholder="1" style="width: 100%; font-size: 16px; padding: 12px;">
                         </div>
 
                         <div class="form-group">
-                            <div class="form-label">Preço de Venda</div>
-                            <input type="number" id="vapePrecoVenda" class="entry-input" step="0.01" min="0" placeholder="0" style="width: 100%; font-size: 16px; padding: 12px;" onchange="calcularVendaRapida()">
+                            <div class="form-label">Preço Unitário</div>
+                            <input type="number" id="vapePreco" class="entry-input" step="0.01" min="0" placeholder="0" style="width: 100%; font-size: 16px; padding: 12px;">
                         </div>
 
-                        <button class="btn btn-primary" onclick="registrarVendaRapida()" style="width: 100%; margin-bottom: 16px; font-size: 14px; padding: 12px;">✓ Registrar Venda</button>
+                        <button class="btn btn-primary" onclick="registrarVenda()" style="width: 100%; margin-bottom: 16px; font-size: 14px; padding: 12px;">✓ Registrar Venda</button>
                         <div class="salvo-indicator" id="vapeIndicador" style="text-align: center;">✓ Salvo!</div>
                     </div>
 
@@ -606,10 +619,11 @@
                                     <th class="num">Qtd</th>
                                     <th class="num">Preço Unit.</th>
                                     <th class="num">Total</th>
+                                    <th>Cidade</th>
                                     <th>Ações</th>
                                 </tr>
                             </thead>
-                            <tbody id="vapeVendasListTabela">
+                            <tbody id="vapeVendasBody">
                             </tbody>
                         </table>
                     </div>
@@ -618,33 +632,87 @@
 
             <!-- ABA ESTOQUE -->
             <div id="abaEstoque" style="display: none;">
-                <div class="table-wrapper" style="margin-bottom: 24px;">
-                    <div class="table-scroll">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Produto</th>
-                                    <th class="num">Qtd</th>
-                                    <th class="num">Preço Compra</th>
-                                    <th class="num">Preço Venda</th>
-                                    <th class="num">Lucro %</th>
-                                    <th class="num">Lucro R$</th>
-                                    <th>Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody id="estoqueBodyVape">
-                            </tbody>
-                        </table>
+                <div style="display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 1px solid var(--border);">
+                    <button class="sub-tab active" onclick="trocarEstoque('geral')" style="padding: 8px 16px; background: none; border: none; color: var(--text-secondary); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--text-secondary)'">Geral</button>
+                    <button class="sub-tab" onclick="trocarEstoque('bh')" style="padding: 8px 16px; background: none; border: none; color: var(--text-secondary); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--text-secondary)'">BH</button>
+                    <button class="sub-tab" onclick="trocarEstoque('sm')" style="padding: 8px 16px; background: none; border: none; color: var(--text-secondary); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--text-secondary)'">Santa Maria</button>
+                </div>
+
+                <div id="estoqueGeral" style="display: block;">
+                    <div class="table-wrapper" style="margin-bottom: 24px;">
+                        <div class="table-scroll">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Modelo</th>
+                                        <th>Sabor</th>
+                                        <th class="num">Qtd</th>
+                                        <th class="num">Preço Compra</th>
+                                        <th class="num">Preço Venda</th>
+                                        <th class="num">Lucro R$</th>
+                                        <th class="num">Lucro %</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="estoqueGeralBody">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="estoqueBH" style="display: none;">
+                    <div class="table-wrapper" style="margin-bottom: 24px;">
+                        <div class="table-scroll">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Modelo</th>
+                                        <th>Sabor</th>
+                                        <th class="num">Qtd</th>
+                                        <th class="num">Preço Compra</th>
+                                        <th class="num">Preço Venda</th>
+                                        <th class="num">Lucro R$</th>
+                                        <th class="num">Lucro %</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="estoqueBHBody">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="estoqueSM" style="display: none;">
+                    <div class="table-wrapper" style="margin-bottom: 24px;">
+                        <div class="table-scroll">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Modelo</th>
+                                        <th>Sabor</th>
+                                        <th class="num">Qtd</th>
+                                        <th class="num">Preço Compra</th>
+                                        <th class="num">Preço Venda</th>
+                                        <th class="num">Lucro R$</th>
+                                        <th class="num">Lucro %</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="estoqueSMBody">
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
 
                 <h3 style="margin-bottom: 16px; font-size: 13px; text-transform: uppercase; color: var(--text-secondary);">Adicionar Novo Produto</h3>
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
-                    <input type="text" id="novoProdutoNomeVape" placeholder="Nome do produto">
-                    <input type="number" id="novoProdutoQtdVape" placeholder="Quantidade" min="0" step="1">
-                    <input type="number" id="novoProdutoPrecoCompraVape" placeholder="Preço de compra" min="0" step="0.01">
-                    <input type="number" id="novoProdutoPrecoVendaVape" placeholder="Preço de venda" min="0" step="0.01">
-                    <button class="btn btn-primary" onclick="adicionarProdutoVape()" style="grid-column: 1 / -1;">+ Adicionar Produto</button>
+                    <input type="text" id="novoProdutoModelo" placeholder="Modelo" style="grid-column: 1 / -1;">
+                    <input type="text" id="novoProdutoSabor" placeholder="Sabor" style="grid-column: 1 / -1;">
+                    <input type="number" id="novoProdutoQtdBH" placeholder="Qtd BH" min="0" value="0">
+                    <input type="number" id="novoProdutoQtdSM" placeholder="Qtd Santa Maria" min="0" value="0">
+                    <input type="number" id="novoProdutoCompra" placeholder="Preço de compra" min="0" step="0.01">
+                    <input type="number" id="novoProdutoVenda" placeholder="Preço de venda" min="0" step="0.01">
+                    <button class="btn btn-primary" onclick="adicionarProduto()" style="grid-column: 1 / -1;">+ Adicionar Produto</button>
                 </div>
             </div>
         </div>
