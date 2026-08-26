@@ -67,10 +67,10 @@ function carregarDadosIniciais() {
     ];
 
     dados.estoque = [
-        { id: 1, nome: 'Liquido 20ml', quantidade: 100, precoCompra: 12.00, precoVenda: 25.00 },
-        { id: 2, nome: 'Pod 2ml', quantidade: 50, precoCompra: 7.00, precoVenda: 15.00 },
-        { id: 3, nome: 'Bateria', quantidade: 30, precoCompra: 20.00, precoVenda: 45.00 },
-        { id: 4, nome: 'Coil', quantidade: 75, precoCompra: 3.00, precoVenda: 8.00 }
+        { id: 1, modelo: 'Liquido 20ml', quantidade: 100, precoCompra: 12.00, precoVenda: 25.00, cidades: { BH: 50, 'Santa Maria': 50 } },
+        { id: 2, modelo: 'Pod 2ml', quantidade: 50, precoCompra: 7.00, precoVenda: 15.00, cidades: { BH: 25, 'Santa Maria': 25 } },
+        { id: 3, modelo: 'Bateria', quantidade: 30, precoCompra: 20.00, precoVenda: 45.00, cidades: { BH: 15, 'Santa Maria': 15 } },
+        { id: 4, modelo: 'Coil', quantidade: 75, precoCompra: 3.00, precoVenda: 8.00, cidades: { BH: 37, 'Santa Maria': 38 } }
     ];
 
     salvarDados();
@@ -95,7 +95,11 @@ function tab(pageId) {
 }
 
 function abaModo(modo) {
-    document.querySelectorAll('[id^="aba"]').forEach(aba => aba.style.display = 'none');
+    document.querySelectorAll('[id^="aba"]').forEach(aba => {
+        if (!aba.id.startsWith('abaEstoque') || aba.id === 'abaEstoque') {
+            aba.style.display = 'none';
+        }
+    });
     document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
 
     const abaMap = { vendas: 'abaVendas', estoque: 'abaEstoque' };
@@ -105,6 +109,15 @@ function abaModo(modo) {
     if (modo === 'estoque') {
         renderizarEstoqueVape();
     }
+}
+
+function trocarAbaEstoque(cidade) {
+    document.querySelectorAll('[id^="estoqueAba"]').forEach(aba => aba.style.display = 'none');
+    document.querySelectorAll('#abaEstoque .nav-tab').forEach(t => t.classList.remove('active'));
+
+    const abaMap = { geral: 'estoqueAbaGeral', 'BH': 'estoqueAbaBH', 'Santa Maria': 'estoqueAbaSantaMaria' };
+    document.getElementById(abaMap[cidade]).style.display = 'block';
+    event.target.classList.add('active');
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -223,11 +236,14 @@ function carregarDiaVape() {
     const vendaDia = dados.vendas[dataInput];
     document.getElementById('vapeEntrada').value = vendaDia.entrada || '';
 
+    const cidade = document.getElementById('vapeCidade').value || 'BH';
+
     // Preencher dropdown de produto para venda rápida
     const select = document.getElementById('vapeProdutoVenda');
     select.innerHTML = '<option value="">Selecione um produto</option>';
     dados.estoque.forEach(p => {
-        select.innerHTML += `<option value="${p.id}" data-preco="${p.precoVenda}">${p.nome} (${p.quantidade})</option>`;
+        const qtdCidade = p.cidades[cidade] || 0;
+        select.innerHTML += `<option value="${p.id}" data-preco="${p.precoVenda}">${p.modelo} (${qtdCidade})</option>`;
     });
 
     renderizarVendasVapeTabela(vendaDia.vendidos || []);
@@ -254,6 +270,7 @@ function registrarVendaRapida() {
     const produtoId = parseInt(document.getElementById('vapeProdutoVenda').value);
     const quantidade = parseInt(document.getElementById('vapeQtdVenda').value) || 0;
     const preco = parseFloat(document.getElementById('vapePrecoVenda').value) || 0;
+    const cidade = document.getElementById('vapeCidade').value;
 
     if (!produtoId) {
         alert('Selecione um produto');
@@ -278,13 +295,18 @@ function registrarVendaRapida() {
         return;
     }
 
+    if (!produto.cidades[cidade] || produto.cidades[cidade] < quantidade) {
+        alert(`Estoque insuficiente em ${cidade}! Disponível: ${produto.cidades[cidade] || 0}`);
+        return;
+    }
+
     const dataInput = document.getElementById('vapeData').value;
     if (!dados.vendas[dataInput]) {
         dados.vendas[dataInput] = { entrada: 0, vendidos: [] };
     }
 
     const vendaDia = dados.vendas[dataInput];
-    const vendaExistente = vendaDia.vendidos.find(v => v.id === produtoId);
+    const vendaExistente = vendaDia.vendidos.find(v => v.id === produtoId && v.cidade === cidade);
 
     if (vendaExistente) {
         vendaExistente.quantidade += quantidade;
@@ -292,17 +314,23 @@ function registrarVendaRapida() {
     } else {
         vendaDia.vendidos.push({
             id: produtoId,
-            nome: produto.nome,
+            nome: produto.modelo,
             quantidade: quantidade,
-            precoVenda: preco
+            precoVenda: preco,
+            cidade: cidade
         });
     }
+
+    produto.quantidade -= quantidade;
+    produto.cidades[cidade] -= quantidade;
 
     document.getElementById('vapeProdutoVenda').value = '';
     document.getElementById('vapeQtdVenda').value = '1';
     document.getElementById('vapePrecoVenda').value = '';
 
+    salvarDados();
     renderizarVendasVapeTabela(vendaDia.vendidos);
+    renderizarEstoqueVape();
     calcularVape();
 
     document.getElementById('vapeIndicador').classList.add('show');
@@ -322,14 +350,55 @@ function calcularVendaRapida() {
 }
 
 function renderizarEstoqueVape() {
-    const tbody = document.getElementById('estoqueBodyVape');
-    tbody.innerHTML = dados.estoque.map(p => {
+    // Tabela Geral
+    const tbodyGeral = document.getElementById('estoqueBodyVapeGeral');
+    tbodyGeral.innerHTML = dados.estoque.map(p => {
         const lucroPercentual = p.precoCompra > 0 ? ((p.precoVenda - p.precoCompra) / p.precoCompra * 100) : 0;
         const lucroValor = p.precoVenda - p.precoCompra;
         return `
             <tr>
-                <td>${p.nome}</td>
+                <td>${p.modelo}</td>
                 <td class="num editable" onclick="editarEstoqueVape(${p.id}, 'quantidade')">${p.quantidade}</td>
+                <td class="num editable" onclick="editarEstoqueVape(${p.id}, 'precoCompra')">R$ ${p.precoCompra.toFixed(2)}</td>
+                <td class="num editable" onclick="editarEstoqueVape(${p.id}, 'precoVenda')">R$ ${p.precoVenda.toFixed(2)}</td>
+                <td class="num" style="color: ${lucroPercentual >= 0 ? 'var(--gr)' : 'var(--rd)'}">${lucroPercentual.toFixed(1)}%</td>
+                <td class="num positive">${formatarMoeda(lucroValor)}</td>
+                <td>
+                    <button class="btn btn-danger btn-small" onclick="deletarProdutoVape(${p.id})">Remover</button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+
+    // Tabela BH
+    const tbodyBH = document.getElementById('estoqueBodyVapeBH');
+    tbodyBH.innerHTML = dados.estoque.map(p => {
+        const lucroPercentual = p.precoCompra > 0 ? ((p.precoVenda - p.precoCompra) / p.precoCompra * 100) : 0;
+        const lucroValor = p.precoVenda - p.precoCompra;
+        return `
+            <tr>
+                <td>${p.modelo}</td>
+                <td class="num editable" onclick="editarEstoqueVapeCidade(${p.id}, 'BH')">${p.cidades.BH || 0}</td>
+                <td class="num editable" onclick="editarEstoqueVape(${p.id}, 'precoCompra')">R$ ${p.precoCompra.toFixed(2)}</td>
+                <td class="num editable" onclick="editarEstoqueVape(${p.id}, 'precoVenda')">R$ ${p.precoVenda.toFixed(2)}</td>
+                <td class="num" style="color: ${lucroPercentual >= 0 ? 'var(--gr)' : 'var(--rd)'}">${lucroPercentual.toFixed(1)}%</td>
+                <td class="num positive">${formatarMoeda(lucroValor)}</td>
+                <td>
+                    <button class="btn btn-danger btn-small" onclick="deletarProdutoVape(${p.id})">Remover</button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+
+    // Tabela Santa Maria
+    const tbodySM = document.getElementById('estoqueBodyVapeSantaMaria');
+    tbodySM.innerHTML = dados.estoque.map(p => {
+        const lucroPercentual = p.precoCompra > 0 ? ((p.precoVenda - p.precoCompra) / p.precoCompra * 100) : 0;
+        const lucroValor = p.precoVenda - p.precoCompra;
+        return `
+            <tr>
+                <td>${p.modelo}</td>
+                <td class="num editable" onclick="editarEstoqueVapeCidade(${p.id}, 'Santa Maria')">${p.cidades['Santa Maria'] || 0}</td>
                 <td class="num editable" onclick="editarEstoqueVape(${p.id}, 'precoCompra')">R$ ${p.precoCompra.toFixed(2)}</td>
                 <td class="num editable" onclick="editarEstoqueVape(${p.id}, 'precoVenda')">R$ ${p.precoVenda.toFixed(2)}</td>
                 <td class="num" style="color: ${lucroPercentual >= 0 ? 'var(--gr)' : 'var(--rd)'}">${lucroPercentual.toFixed(1)}%</td>
@@ -348,17 +417,17 @@ function editarEstoqueVape(id, campo) {
 
     let novoValor;
     if (campo === 'quantidade') {
-        novoValor = prompt(`Nova quantidade para ${produto.nome}:`, produto.quantidade);
+        novoValor = prompt(`Nova quantidade para ${produto.modelo}:`, produto.quantidade);
         if (novoValor !== null) {
             produto.quantidade = parseInt(novoValor) || produto.quantidade;
         }
     } else if (campo === 'precoCompra') {
-        novoValor = prompt(`Novo preço de compra para ${produto.nome}:`, produto.precoCompra.toFixed(2));
+        novoValor = prompt(`Novo preço de compra para ${produto.modelo}:`, produto.precoCompra.toFixed(2));
         if (novoValor !== null) {
             produto.precoCompra = parseFloat(novoValor) || produto.precoCompra;
         }
     } else if (campo === 'precoVenda') {
-        novoValor = prompt(`Novo preço de venda para ${produto.nome}:`, produto.precoVenda.toFixed(2));
+        novoValor = prompt(`Novo preço de venda para ${produto.modelo}:`, produto.precoVenda.toFixed(2));
         if (novoValor !== null) {
             produto.precoVenda = parseFloat(novoValor) || produto.precoVenda;
         }
@@ -367,6 +436,24 @@ function editarEstoqueVape(id, campo) {
     salvarDados();
     renderizarEstoqueVape();
     carregarDiaVape();
+}
+
+function editarEstoqueVapeCidade(id, cidade) {
+    const produto = dados.estoque.find(p => p.id === id);
+    if (!produto) return;
+
+    const novoValor = prompt(`Nova quantidade em ${cidade} para ${produto.modelo}:`, produto.cidades[cidade] || 0);
+    if (novoValor !== null) {
+        const qtdAnterior = produto.cidades[cidade] || 0;
+        const qtdNova = parseInt(novoValor) || 0;
+        const diferenca = qtdNova - qtdAnterior;
+
+        produto.cidades[cidade] = qtdNova;
+        produto.quantidade += diferenca;
+    }
+
+    salvarDados();
+    renderizarEstoqueVape();
 }
 
 function deletarProdutoVape(id) {
@@ -379,24 +466,35 @@ function deletarProdutoVape(id) {
 }
 
 function adicionarProdutoVape() {
-    const nome = document.getElementById('novoProdutoNomeVape').value.trim();
-    const quantidade = parseInt(document.getElementById('novoProdutoQtdVape').value) || 0;
+    const modelo = document.getElementById('novoProdutoModeloVape').value.trim();
+    const qtdBH = parseInt(document.getElementById('novoProdutoQtdBHVape').value) || 0;
+    const qtdSM = parseInt(document.getElementById('novoProdutoQtdSMVape').value) || 0;
     const precoCompra = parseFloat(document.getElementById('novoProdutoPrecoCompraVape').value) || 0;
     const precoVenda = parseFloat(document.getElementById('novoProdutoPrecoVendaVape').value) || 0;
 
-    if (!nome) {
-        alert('Digite o nome do produto');
+    if (!modelo) {
+        alert('Digite o modelo do produto');
         return;
     }
 
+    const quantidade = qtdBH + qtdSM;
+
     const novoId = Math.max(...dados.estoque.map(p => p.id), 0) + 1;
-    dados.estoque.push({ id: novoId, nome, quantidade, precoCompra, precoVenda });
+    dados.estoque.push({
+        id: novoId,
+        modelo,
+        quantidade,
+        precoCompra,
+        precoVenda,
+        cidades: { BH: qtdBH, 'Santa Maria': qtdSM }
+    });
 
     salvarDados();
     renderizarEstoqueVape();
 
-    document.getElementById('novoProdutoNomeVape').value = '';
-    document.getElementById('novoProdutoQtdVape').value = '';
+    document.getElementById('novoProdutoModeloVape').value = '';
+    document.getElementById('novoProdutoQtdBHVape').value = '';
+    document.getElementById('novoProdutoQtdSMVape').value = '';
     document.getElementById('novoProdutoPrecoCompraVape').value = '';
     document.getElementById('novoProdutoPrecoVendaVape').value = '';
 
@@ -410,6 +508,7 @@ function renderizarVendasVapeTabela(vendidos) {
         return `
             <tr>
                 <td>${v.nome}</td>
+                <td class="num">${v.cidade || '-'}</td>
                 <td class="num">${v.quantidade}</td>
                 <td class="num">${formatarMoeda(v.precoVenda)}</td>
                 <td class="num positive">${formatarMoeda(valorTotal)}</td>
@@ -421,7 +520,7 @@ function renderizarVendasVapeTabela(vendidos) {
     }).join('');
 
     if (vendidos.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-secondary); padding: 20px;">Nenhuma venda registrada</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-secondary); padding: 20px;">Nenhuma venda registrada</td></tr>';
     }
 }
 
