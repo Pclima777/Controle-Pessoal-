@@ -67,10 +67,10 @@ function carregarDadosIniciais() {
     ];
 
     dados.estoque = [
-        { id: 1, nome: 'Liquido 20ml', quantidade: 100, preco: 25.00 },
-        { id: 2, nome: 'Pod 2ml', quantidade: 50, preco: 15.00 },
-        { id: 3, nome: 'Bateria', quantidade: 30, preco: 45.00 },
-        { id: 4, nome: 'Coil', quantidade: 75, preco: 8.00 }
+        { id: 1, nome: 'Liquido 20ml', quantidade: 100, precoCompra: 12.00, precoVenda: 25.00 },
+        { id: 2, nome: 'Pod 2ml', quantidade: 50, precoCompra: 7.00, precoVenda: 15.00 },
+        { id: 3, nome: 'Bateria', quantidade: 30, precoCompra: 20.00, precoVenda: 45.00 },
+        { id: 4, nome: 'Coil', quantidade: 75, precoCompra: 3.00, precoVenda: 8.00 }
     ];
 
     salvarDados();
@@ -87,8 +87,23 @@ function tab(pageId) {
     document.getElementById(pageId).classList.add('active');
     event.target.classList.add('active');
 
-    if (pageId === 'projecao') {
+    if (pageId === 'vape') {
+        carregarDiaVape();
+    } else if (pageId === 'projecao') {
         setTimeout(() => renderizarProjecao(), 100);
+    }
+}
+
+function abaModo(modo) {
+    document.querySelectorAll('[id^="aba"]').forEach(aba => aba.style.display = 'none');
+    document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+
+    const abaMap = { vendas: 'abaVendas', estoque: 'abaEstoque' };
+    document.getElementById(abaMap[modo]).style.display = 'block';
+    event.target.classList.add('active');
+
+    if (modo === 'estoque') {
+        renderizarEstoqueVape();
     }
 }
 
@@ -201,27 +216,21 @@ function carregarDiaVape() {
     });
     document.getElementById('vapeDataInfo').textContent = nomeDia;
 
-    // Preencher dropdown de produtos
-    const select = document.getElementById('vapeProduto');
+    if (!dados.vendas[dataInput]) {
+        dados.vendas[dataInput] = { entrada: 0, vendidos: [] };
+    }
+
+    const vendaDia = dados.vendas[dataInput];
+    document.getElementById('vapeEntrada').value = vendaDia.entrada || '';
+
+    // Preencher dropdown de produto para venda rápida
+    const select = document.getElementById('vapeProdutoVenda');
     select.innerHTML = '<option value="">Selecione um produto</option>';
     dados.estoque.forEach(p => {
-        select.innerHTML += `<option value="${p.id}">${p.nome} (${p.quantidade})</option>`;
+        select.innerHTML += `<option value="${p.id}" data-preco="${p.precoVenda}">${p.nome} (${p.quantidade})</option>`;
     });
 
-    const vendaDia = dados.vendas[dataInput] || {
-        pix: 0,
-        dinheiro: 0,
-        credito: 0,
-        debito: 0,
-        vendidos: []
-    };
-
-    document.getElementById('vapePix').value = vendaDia.pix || '';
-    document.getElementById('vapeDinheiro').value = vendaDia.dinheiro || '';
-    document.getElementById('vapeCredito').value = vendaDia.credito || '';
-    document.getElementById('vapeDebito').value = vendaDia.debito || '';
-
-    renderizarVendasVape(vendaDia.vendidos || []);
+    renderizarVendasVapeTabela(vendaDia.vendidos || []);
     calcularVape();
 }
 
@@ -241,6 +250,191 @@ function vapeProximo() {
     carregarDiaVape();
 }
 
+function registrarVendaRapida() {
+    const produtoId = parseInt(document.getElementById('vapeProdutoVenda').value);
+    const quantidade = parseInt(document.getElementById('vapeQtdVenda').value) || 0;
+    const preco = parseFloat(document.getElementById('vapePrecoVenda').value) || 0;
+
+    if (!produtoId) {
+        alert('Selecione um produto');
+        return;
+    }
+
+    if (quantidade <= 0) {
+        alert('Digite uma quantidade válida');
+        return;
+    }
+
+    if (preco <= 0) {
+        alert('Digite um preço válido');
+        return;
+    }
+
+    const produto = dados.estoque.find(p => p.id === produtoId);
+    if (!produto) return;
+
+    if (produto.quantidade < quantidade) {
+        alert(`Estoque insuficiente! Disponível: ${produto.quantidade}`);
+        return;
+    }
+
+    const dataInput = document.getElementById('vapeData').value;
+    if (!dados.vendas[dataInput]) {
+        dados.vendas[dataInput] = { entrada: 0, vendidos: [] };
+    }
+
+    const vendaDia = dados.vendas[dataInput];
+    const vendaExistente = vendaDia.vendidos.find(v => v.id === produtoId);
+
+    if (vendaExistente) {
+        vendaExistente.quantidade += quantidade;
+        vendaExistente.precoVenda = preco;
+    } else {
+        vendaDia.vendidos.push({
+            id: produtoId,
+            nome: produto.nome,
+            quantidade: quantidade,
+            precoVenda: preco
+        });
+    }
+
+    document.getElementById('vapeProdutoVenda').value = '';
+    document.getElementById('vapeQtdVenda').value = '1';
+    document.getElementById('vapePrecoVenda').value = '';
+
+    renderizarVendasVapeTabela(vendaDia.vendidos);
+    calcularVape();
+
+    document.getElementById('vapeIndicador').classList.add('show');
+    setTimeout(() => {
+        document.getElementById('vapeIndicador').classList.remove('show');
+    }, 1500);
+}
+
+function calcularVendaRapida() {
+    const produtoId = parseInt(document.getElementById('vapeProdutoVenda').value);
+    if (produtoId) {
+        const produto = dados.estoque.find(p => p.id === produtoId);
+        if (produto && !document.getElementById('vapePrecoVenda').value) {
+            document.getElementById('vapePrecoVenda').value = produto.precoVenda.toFixed(2);
+        }
+    }
+}
+
+function renderizarEstoqueVape() {
+    const tbody = document.getElementById('estoqueBodyVape');
+    tbody.innerHTML = dados.estoque.map(p => {
+        const lucroPercentual = p.precoCompra > 0 ? ((p.precoVenda - p.precoCompra) / p.precoCompra * 100) : 0;
+        const lucroValor = p.precoVenda - p.precoCompra;
+        return `
+            <tr>
+                <td>${p.nome}</td>
+                <td class="num editable" onclick="editarEstoqueVape(${p.id}, 'quantidade')">${p.quantidade}</td>
+                <td class="num editable" onclick="editarEstoqueVape(${p.id}, 'precoCompra')">R$ ${p.precoCompra.toFixed(2)}</td>
+                <td class="num editable" onclick="editarEstoqueVape(${p.id}, 'precoVenda')">R$ ${p.precoVenda.toFixed(2)}</td>
+                <td class="num" style="color: ${lucroPercentual >= 0 ? 'var(--gr)' : 'var(--rd)'}">${lucroPercentual.toFixed(1)}%</td>
+                <td class="num positive">${formatarMoeda(lucroValor)}</td>
+                <td>
+                    <button class="btn btn-danger btn-small" onclick="deletarProdutoVape(${p.id})">Remover</button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function editarEstoqueVape(id, campo) {
+    const produto = dados.estoque.find(p => p.id === id);
+    if (!produto) return;
+
+    let novoValor;
+    if (campo === 'quantidade') {
+        novoValor = prompt(`Nova quantidade para ${produto.nome}:`, produto.quantidade);
+        if (novoValor !== null) {
+            produto.quantidade = parseInt(novoValor) || produto.quantidade;
+        }
+    } else if (campo === 'precoCompra') {
+        novoValor = prompt(`Novo preço de compra para ${produto.nome}:`, produto.precoCompra.toFixed(2));
+        if (novoValor !== null) {
+            produto.precoCompra = parseFloat(novoValor) || produto.precoCompra;
+        }
+    } else if (campo === 'precoVenda') {
+        novoValor = prompt(`Novo preço de venda para ${produto.nome}:`, produto.precoVenda.toFixed(2));
+        if (novoValor !== null) {
+            produto.precoVenda = parseFloat(novoValor) || produto.precoVenda;
+        }
+    }
+
+    salvarDados();
+    renderizarEstoqueVape();
+    carregarDiaVape();
+}
+
+function deletarProdutoVape(id) {
+    if (confirm('Tem certeza que deseja remover este produto?')) {
+        dados.estoque = dados.estoque.filter(p => p.id !== id);
+        salvarDados();
+        renderizarEstoqueVape();
+        carregarDiaVape();
+    }
+}
+
+function adicionarProdutoVape() {
+    const nome = document.getElementById('novoProdutoNomeVape').value.trim();
+    const quantidade = parseInt(document.getElementById('novoProdutoQtdVape').value) || 0;
+    const precoCompra = parseFloat(document.getElementById('novoProdutoPrecoCompraVape').value) || 0;
+    const precoVenda = parseFloat(document.getElementById('novoProdutoPrecoVendaVape').value) || 0;
+
+    if (!nome) {
+        alert('Digite o nome do produto');
+        return;
+    }
+
+    const novoId = Math.max(...dados.estoque.map(p => p.id), 0) + 1;
+    dados.estoque.push({ id: novoId, nome, quantidade, precoCompra, precoVenda });
+
+    salvarDados();
+    renderizarEstoqueVape();
+
+    document.getElementById('novoProdutoNomeVape').value = '';
+    document.getElementById('novoProdutoQtdVape').value = '';
+    document.getElementById('novoProdutoPrecoCompraVape').value = '';
+    document.getElementById('novoProdutoPrecoVendaVape').value = '';
+
+    carregarDiaVape();
+}
+
+function renderizarVendasVapeTabela(vendidos) {
+    const tbody = document.getElementById('vapeVendasListTabela');
+    tbody.innerHTML = vendidos.map((v, i) => {
+        const valorTotal = v.quantidade * v.precoVenda;
+        return `
+            <tr>
+                <td>${v.nome}</td>
+                <td class="num">${v.quantidade}</td>
+                <td class="num">${formatarMoeda(v.precoVenda)}</td>
+                <td class="num positive">${formatarMoeda(valorTotal)}</td>
+                <td>
+                    <button class="btn btn-danger btn-small" onclick="removerVendaVapeTabela(${i})">Remover</button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+
+    if (vendidos.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-secondary); padding: 20px;">Nenhuma venda registrada</td></tr>';
+    }
+}
+
+function removerVendaVapeTabela(index) {
+    const dataInput = document.getElementById('vapeData').value;
+    const vendaDia = dados.vendas[dataInput];
+    if (!vendaDia) return;
+
+    vendaDia.vendidos.splice(index, 1);
+    renderizarVendasVapeTabela(vendaDia.vendidos);
+    calcularVape();
+}
+
 function adicionarVendaVape() {
     const produtoId = parseInt(document.getElementById('vapeProduto').value);
     const quantidade = parseInt(document.getElementById('vapeQtd').value) || 1;
@@ -253,17 +447,9 @@ function adicionarVendaVape() {
     const produto = dados.estoque.find(p => p.id === produtoId);
     if (!produto) return;
 
-    if (produto.quantidade < quantidade) {
-        alert(`Quantidade insuficiente. Disponível: ${produto.quantidade}`);
-        return;
-    }
-
     const dataInput = document.getElementById('vapeData').value;
     const vendaDia = dados.vendas[dataInput] || {
-        pix: 0,
-        dinheiro: 0,
-        credito: 0,
-        debito: 0,
+        entrada: 0,
         vendidos: []
     };
 
@@ -275,27 +461,63 @@ function adicionarVendaVape() {
             id: produtoId,
             nome: produto.nome,
             quantidade: quantidade,
-            preco: produto.preco
+            precoVenda: produto.precoVenda
         });
+    }
+
+    dados.vendas[dataInput] = vendaDia;
+    renderizarVendasVape(vendaDia.vendidos);
+    calcularVape();
+
+    document.getElementById('vapeQtd').value = 1;
+    document.getElementById('vapeProduto').value = '';
+    document.getElementById('vapeProduto').focus();
+}
+
+function editarVendaVape(index, campo, novoValor) {
+    const dataInput = document.getElementById('vapeData').value;
+    const vendaDia = dados.vendas[dataInput];
+    if (!vendaDia) return;
+
+    const venda = vendaDia.vendidos[index];
+    if (!venda) return;
+
+    if (campo === 'quantidade') {
+        venda.quantidade = Math.max(1, parseInt(novoValor) || 1);
+    } else if (campo === 'preco') {
+        venda.precoVenda = parseFloat(novoValor) || 0;
     }
 
     renderizarVendasVape(vendaDia.vendidos);
     calcularVape();
-    document.getElementById('vapeQtd').value = 1;
-    document.getElementById('vapeProduto').value = '';
 }
 
 function renderizarVendasVape(vendidos) {
     const list = document.getElementById('vapeVendasList');
-    list.innerHTML = vendidos.map((v, i) => `
-        <div style="background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; padding: 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
-            <div>
-                <div style="font-weight: 600;">${v.nome}</div>
-                <div style="font-size: 11px; color: var(--text-secondary);">Qtd: ${v.quantidade} × R$ ${v.preco.toFixed(2)}</div>
+    list.innerHTML = vendidos.map((v, i) => {
+        const valorTotal = v.quantidade * v.precoVenda;
+        return `
+            <div style="background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; padding: 12px; margin-bottom: 8px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <div>
+                        <div style="font-weight: 600; margin-bottom: 4px;">${v.nome}</div>
+                        <div style="font-size: 12px; color: var(--text-secondary);">Total: <strong style="color: var(--gr);">${formatarMoeda(valorTotal)}</strong></div>
+                    </div>
+                    <button class="btn btn-secondary btn-icon" onclick="removerVendaVape(${i})">✕</button>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 12px;">
+                    <div>
+                        <div style="color: var(--text-secondary); margin-bottom: 4px;">Qtd</div>
+                        <input type="number" value="${v.quantidade}" min="1" onchange="editarVendaVape(${i}, 'quantidade', this.value); calcularVape()" style="width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 4px; padding: 6px; color: var(--text); font-weight: 600;">
+                    </div>
+                    <div>
+                        <div style="color: var(--text-secondary); margin-bottom: 4px;">Preço Unit.</div>
+                        <input type="number" value="${v.precoVenda.toFixed(2)}" step="0.01" min="0" onchange="editarVendaVape(${i}, 'preco', this.value); calcularVape()" style="width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 4px; padding: 6px; color: var(--text); font-weight: 600;">
+                    </div>
+                </div>
             </div>
-            <button class="btn btn-secondary btn-icon" onclick="removerVendaVape(${i})">✕</button>
-        </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
 function removerVendaVape(index) {
@@ -314,25 +536,21 @@ function removerVendaVape(index) {
 }
 
 function calcularVape() {
-    const pix = parseFloat(document.getElementById('vapePix').value) || 0;
-    const dinheiro = parseFloat(document.getElementById('vapeDinheiro').value) || 0;
-    const credito = parseFloat(document.getElementById('vapeCredito').value) || 0;
-    const debito = parseFloat(document.getElementById('vapeDebito').value) || 0;
+    const entrada = parseFloat(document.getElementById('vapeEntrada').value) || 0;
 
     const dataInput = document.getElementById('vapeData').value;
-    const vendaDia = dados.vendas[dataInput] || {
-        pix: 0,
-        dinheiro: 0,
-        credito: 0,
-        debito: 0,
-        vendidos: []
-    };
 
-    const totalEntrada = pix + dinheiro + credito + debito;
-    const totalSaida = vendaDia.vendidos.reduce((sum, v) => sum + (v.quantidade * v.preco), 0);
-    const resultado = totalEntrada - totalSaida;
+    if (!dados.vendas[dataInput]) {
+        dados.vendas[dataInput] = { entrada: 0, vendidos: [] };
+    }
 
-    document.getElementById('vapeTotalEntrada').textContent = formatarMoeda(totalEntrada);
+    const vendaDia = dados.vendas[dataInput];
+    vendaDia.entrada = entrada;
+
+    const totalSaida = vendaDia.vendidos.reduce((sum, v) => sum + (v.quantidade * v.precoVenda), 0);
+    const resultado = entrada - totalSaida;
+
+    document.getElementById('vapeTotalEntrada').textContent = formatarMoeda(entrada);
     document.getElementById('vapeTotalSaida').textContent = formatarMoeda(totalSaida);
     document.getElementById('vapeResultado').textContent = formatarMoeda(resultado);
 
@@ -345,7 +563,7 @@ function renderizarResumoVape(vendidos) {
         <tr>
             <td>${v.nome}</td>
             <td class="num">${v.quantidade}</td>
-            <td class="num negative">${formatarMoeda(v.quantidade * v.preco)}</td>
+            <td class="num negative">${formatarMoeda(v.quantidade * v.precoVenda)}</td>
         </tr>
     `).join('');
 
@@ -356,33 +574,34 @@ function renderizarResumoVape(vendidos) {
 
 function salvarVape() {
     const dataInput = document.getElementById('vapeData').value;
-    const pix = parseFloat(document.getElementById('vapePix').value) || 0;
-    const dinheiro = parseFloat(document.getElementById('vapeDinheiro').value) || 0;
-    const credito = parseFloat(document.getElementById('vapeCredito').value) || 0;
-    const debito = parseFloat(document.getElementById('vapeDebito').value) || 0;
+    const entrada = parseFloat(document.getElementById('vapeEntrada').value) || 0;
 
-    const vendaDia = dados.vendas[dataInput] || {
-        pix: 0,
-        dinheiro: 0,
-        credito: 0,
-        debito: 0,
-        vendidos: []
-    };
+    if (!dados.vendas[dataInput]) {
+        dados.vendas[dataInput] = { entrada: 0, vendidos: [] };
+    }
 
-    vendaDia.pix = pix;
-    vendaDia.dinheiro = dinheiro;
-    vendaDia.credito = credito;
-    vendaDia.debito = debito;
+    const vendaDia = dados.vendas[dataInput];
 
-    // Reduzir estoque
+    if (vendaDia.vendidos.length === 0 && entrada === 0) {
+        alert('Adicione produtos ou um valor de entrada');
+        return;
+    }
+
+    vendaDia.entrada = entrada;
+
+    // Reduzir estoque apenas das novas vendas
     vendaDia.vendidos.forEach(venda => {
         const produto = dados.estoque.find(p => p.id === venda.id);
         if (produto) {
-            produto.quantidade -= venda.quantidade;
+            if (produto.quantidade >= venda.quantidade) {
+                produto.quantidade -= venda.quantidade;
+            } else {
+                alert(`Estoque insuficiente de ${produto.nome}`);
+                return;
+            }
         }
     });
 
-    dados.vendas[dataInput] = vendaDia;
     salvarDados();
 
     document.getElementById('vapeIndicador').classList.add('show');
@@ -390,7 +609,9 @@ function salvarVape() {
         document.getElementById('vapeIndicador').classList.remove('show');
     }, 2000);
 
+    renderizarEstoque();
     renderizarDashboard();
+    carregarDiaVape();
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -400,13 +621,16 @@ function salvarVape() {
 function renderizarEstoque() {
     const tbody = document.getElementById('estoqueBody');
     tbody.innerHTML = dados.estoque.map(p => {
-        const valorTotal = p.quantidade * p.preco;
+        const lucroPercentual = p.precoCompra > 0 ? ((p.precoVenda - p.precoCompra) / p.precoCompra * 100) : 0;
+        const lucroValor = p.precoVenda - p.precoCompra;
         return `
             <tr>
                 <td>${p.nome}</td>
                 <td class="num editable" onclick="editarEstoque(${p.id}, 'quantidade')">${p.quantidade}</td>
-                <td class="num editable" onclick="editarEstoque(${p.id}, 'preco')">R$ ${p.preco.toFixed(2)}</td>
-                <td class="num">${formatarMoeda(valorTotal)}</td>
+                <td class="num editable" onclick="editarEstoque(${p.id}, 'precoCompra')">R$ ${p.precoCompra.toFixed(2)}</td>
+                <td class="num editable" onclick="editarEstoque(${p.id}, 'precoVenda')">R$ ${p.precoVenda.toFixed(2)}</td>
+                <td class="num" style="color: ${lucroPercentual >= 0 ? 'var(--gr)' : 'var(--rd)'}">${lucroPercentual.toFixed(1)}%</td>
+                <td class="num positive">${formatarMoeda(lucroValor)}</td>
                 <td>
                     <button class="btn btn-danger btn-small" onclick="deletarProduto(${p.id})">Remover</button>
                 </td>
@@ -418,7 +642,8 @@ function renderizarEstoque() {
 function adicionarProduto() {
     const nome = document.getElementById('novoProdutoNome').value.trim();
     const quantidade = parseInt(document.getElementById('novoProdutoQtd').value) || 0;
-    const preco = parseFloat(document.getElementById('novoProdutoPreco').value) || 0;
+    const precoCompra = parseFloat(document.getElementById('novoProdutoPrecoCompra').value) || 0;
+    const precoVenda = parseFloat(document.getElementById('novoProdutoPrecoVenda').value) || 0;
 
     if (!nome) {
         alert('Digite o nome do produto');
@@ -426,14 +651,15 @@ function adicionarProduto() {
     }
 
     const novoId = Math.max(...dados.estoque.map(p => p.id), 0) + 1;
-    dados.estoque.push({ id: novoId, nome, quantidade, preco });
+    dados.estoque.push({ id: novoId, nome, quantidade, precoCompra, precoVenda });
 
     salvarDados();
     renderizarEstoque();
 
     document.getElementById('novoProdutoNome').value = '';
     document.getElementById('novoProdutoQtd').value = '';
-    document.getElementById('novoProdutoPreco').value = '';
+    document.getElementById('novoProdutoPrecoCompra').value = '';
+    document.getElementById('novoProdutoPrecoVenda').value = '';
 
     carregarDiaVape();
 }
@@ -448,10 +674,15 @@ function editarEstoque(id, campo) {
         if (novoValor !== null) {
             produto.quantidade = parseInt(novoValor) || produto.quantidade;
         }
-    } else if (campo === 'preco') {
-        novoValor = prompt(`Novo preço para ${produto.nome}:`, produto.preco.toFixed(2));
+    } else if (campo === 'precoCompra') {
+        novoValor = prompt(`Novo preço de compra para ${produto.nome}:`, produto.precoCompra.toFixed(2));
         if (novoValor !== null) {
-            produto.preco = parseFloat(novoValor) || produto.preco;
+            produto.precoCompra = parseFloat(novoValor) || produto.precoCompra;
+        }
+    } else if (campo === 'precoVenda') {
+        novoValor = prompt(`Novo preço de venda para ${produto.nome}:`, produto.precoVenda.toFixed(2));
+        if (novoValor !== null) {
+            produto.precoVenda = parseFloat(novoValor) || produto.precoVenda;
         }
     }
 
@@ -584,7 +815,7 @@ function renderizarProjecao() {
 
         const venda = dados.vendas[isoData];
         if (venda) {
-            const entrada = (venda.pix || 0) + (venda.dinheiro || 0) + (venda.credito || 0) + (venda.debito || 0);
+            const entrada = venda.entrada || 0;
             receita += entrada;
         }
 

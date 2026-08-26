@@ -464,7 +464,6 @@
             <button class="nav-tab active" onclick="tab('dashboard')">Dashboard</button>
             <button class="nav-tab" onclick="tab('vape')">Speed Vape</button>
             <button class="nav-tab" onclick="tab('projecao')">Projeção</button>
-            <button class="nav-tab" onclick="tab('estoque')">Estoque</button>
             <button class="nav-tab" onclick="tab('receitas')">Receitas</button>
             <button class="nav-tab" onclick="tab('despesas')">Despesas</button>
         </div>
@@ -522,94 +521,129 @@
     <div id="vape" class="page">
         <div class="container">
             <div class="page-title">Speed Vape</div>
-            <div class="page-subtitle">Registre vendas e acompanhe o estoque</div>
+            <div class="page-subtitle">Vendas e Estoque Integrados</div>
 
-            <div class="two-column">
-                <!-- Left Column - Form -->
-                <div class="form-col">
-                    <div class="form-group">
-                        <div class="form-label">Data</div>
-                        <div class="date-nav">
-                            <button onclick="vapeAnterior()">&larr;</button>
-                            <input type="date" id="vapeData">
-                            <button onclick="vapeProximo()">&rarr;</button>
-                        </div>
-                        <div id="vapeDataInfo" style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 8px;"></div>
+            <!-- Sub-abas dentro de Speed Vape -->
+            <div style="display: flex; gap: 8px; margin-bottom: 24px; border-bottom: 1px solid var(--border); padding-bottom: 0;">
+                <button class="nav-tab active" onclick="abaModo('vendas')" style="border-bottom: 2px solid transparent; padding-bottom: 12px;">💰 Vendas</button>
+                <button class="nav-tab" onclick="abaModo('estoque')" style="border-bottom: 2px solid transparent; padding-bottom: 12px;">📦 Estoque</button>
+            </div>
+
+            <!-- ABA VENDAS -->
+            <div id="abaVendas" style="display: block;">
+                <div class="form-group" style="margin-bottom: 24px;">
+                    <div class="form-label">Data</div>
+                    <div class="date-nav">
+                        <button onclick="vapeAnterior()">&larr;</button>
+                        <input type="date" id="vapeData">
+                        <button onclick="vapeProximo()">&rarr;</button>
                     </div>
+                    <div id="vapeDataInfo" style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 8px;"></div>
+                </div>
 
-                    <div class="form-group">
-                        <div class="form-label">Entradas</div>
-                        <div class="entry-grid">
-                            <div class="entry-box">
-                                <div class="entry-label">Pix</div>
-                                <input type="number" id="vapePix" class="entry-input" step="0.01" min="0" placeholder="0" oninput="calcularVape()">
-                            </div>
-                            <div class="entry-box">
-                                <div class="entry-label">Dinheiro</div>
-                                <input type="number" id="vapeDinheiro" class="entry-input" step="0.01" min="0" placeholder="0" oninput="calcularVape()">
-                            </div>
-                            <div class="entry-box">
-                                <div class="entry-label">Crédito</div>
-                                <input type="number" id="vapeCredito" class="entry-input" step="0.01" min="0" placeholder="0" oninput="calcularVape()">
-                            </div>
-                            <div class="entry-box">
-                                <div class="entry-label">Débito</div>
-                                <input type="number" id="vapeDebito" class="entry-input" step="0.01" min="0" placeholder="0" oninput="calcularVape()">
-                            </div>
-                        </div>
-                    </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
+                    <!-- Esquerda: Formulário de Venda -->
+                    <div class="form-col" style="height: fit-content;">
+                        <h3 style="margin-bottom: 16px; font-size: 13px; text-transform: uppercase; color: var(--text-secondary);">Registrar Venda Rápida</h3>
 
-                    <div class="form-group">
-                        <div class="form-label">Produtos Vendidos</div>
-                        <div style="margin-bottom: 12px;">
-                            <select id="vapeProduto">
+                        <div class="form-group">
+                            <div class="form-label">Produto</div>
+                            <select id="vapeProdutoVenda" style="width: 100%;">
                                 <option value="">Selecione um produto</option>
                             </select>
                         </div>
-                        <div style="display: grid; grid-template-columns: 1fr auto; gap: 8px;">
-                            <input type="number" id="vapeQtd" class="entry-input" min="1" value="1" placeholder="Qtd">
-                            <button class="btn btn-primary btn-small" onclick="adicionarVendaVape()">+</button>
+
+                        <div class="form-group">
+                            <div class="form-label">Quantidade</div>
+                            <input type="number" id="vapeQtdVenda" class="entry-input" min="1" value="1" placeholder="1" style="width: 100%; font-size: 16px; padding: 12px;">
                         </div>
+
+                        <div class="form-group">
+                            <div class="form-label">Preço de Venda</div>
+                            <input type="number" id="vapePrecoVenda" class="entry-input" step="0.01" min="0" placeholder="0" style="width: 100%; font-size: 16px; padding: 12px;" onchange="calcularVendaRapida()">
+                        </div>
+
+                        <button class="btn btn-primary" onclick="registrarVendaRapida()" style="width: 100%; margin-bottom: 16px; font-size: 14px; padding: 12px;">✓ Registrar Venda</button>
+                        <div class="salvo-indicator" id="vapeIndicador" style="text-align: center;">✓ Salvo!</div>
                     </div>
 
-                    <div id="vapeVendasList" style="margin-bottom: 16px;"></div>
+                    <!-- Direita: Resumo do Dia -->
+                    <div class="res-col">
+                        <h3 style="margin-bottom: 16px; font-size: 13px; text-transform: uppercase; color: var(--text-secondary);">Resumo do Dia</h3>
 
-                    <button class="btn btn-primary" onclick="salvarVape()" style="width: 100%;">💾 Salvar Dia</button>
-                    <div class="salvo-indicator" id="vapeIndicador">✓ Salvo</div>
+                        <div style="margin-bottom: 20px;">
+                            <div class="form-label">Valor Total de Entradas</div>
+                            <input type="number" id="vapeEntrada" class="entry-input" step="0.01" min="0" placeholder="0" oninput="calcularVape()" style="width: 100%; font-size: 18px; padding: 12px; font-weight: 600;">
+                        </div>
+
+                        <div style="margin-bottom: 16px;">
+                            <div class="card-label">Total Entradas</div>
+                            <div class="card-value positive" id="vapeTotalEntrada">R$ 0</div>
+                        </div>
+
+                        <div style="margin-bottom: 16px;">
+                            <div class="card-label">Total Saídas (Estoque)</div>
+                            <div class="card-value negative" id="vapeTotalSaida">R$ 0</div>
+                        </div>
+
+                        <div style="margin-bottom: 24px;">
+                            <div class="card-label">Resultado</div>
+                            <div class="card-value" id="vapeResultado">R$ 0</div>
+                        </div>
+
+                        <button class="btn btn-secondary" onclick="salvarVape()" style="width: 100%; margin-top: auto;">💾 Salvar Dia</button>
+                    </div>
                 </div>
 
-                <!-- Right Column - Summary -->
-                <div class="res-col">
-                    <div style="margin-bottom: 24px;">
-                        <div class="card-label">Entradas</div>
-                        <div class="card-value positive" id="vapeTotalEntrada">R$ 0</div>
+                <h3 style="margin-top: 32px; margin-bottom: 16px; font-size: 13px; text-transform: uppercase; color: var(--text-secondary);">Vendas Registradas</h3>
+                <div class="table-wrapper">
+                    <div class="table-scroll">
+                        <table style="font-size: 12px;">
+                            <thead>
+                                <tr>
+                                    <th>Produto</th>
+                                    <th class="num">Qtd</th>
+                                    <th class="num">Preço Unit.</th>
+                                    <th class="num">Total</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="vapeVendasListTabela">
+                            </tbody>
+                        </table>
                     </div>
+                </div>
+            </div>
 
-                    <div style="margin-bottom: 24px;">
-                        <div class="card-label">Saídas (Estoque)</div>
-                        <div class="card-value negative" id="vapeTotalSaida">R$ 0</div>
+            <!-- ABA ESTOQUE -->
+            <div id="abaEstoque" style="display: none;">
+                <div class="table-wrapper" style="margin-bottom: 24px;">
+                    <div class="table-scroll">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Produto</th>
+                                    <th class="num">Qtd</th>
+                                    <th class="num">Preço Compra</th>
+                                    <th class="num">Preço Venda</th>
+                                    <th class="num">Lucro %</th>
+                                    <th class="num">Lucro R$</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="estoqueBodyVape">
+                            </tbody>
+                        </table>
                     </div>
+                </div>
 
-                    <div style="margin-bottom: 24px;">
-                        <div class="card-label">Resultado</div>
-                        <div class="card-value" id="vapeResultado">R$ 0</div>
-                    </div>
-
-                    <div class="table-wrapper" style="margin-top: 24px;">
-                        <div class="table-scroll">
-                            <table style="font-size: 12px;">
-                                <thead>
-                                    <tr>
-                                        <th>Produto</th>
-                                        <th class="num">Qtd</th>
-                                        <th class="num">Valor</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="vapeResumoBody">
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+                <h3 style="margin-bottom: 16px; font-size: 13px; text-transform: uppercase; color: var(--text-secondary);">Adicionar Novo Produto</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+                    <input type="text" id="novoProdutoNomeVape" placeholder="Nome do produto">
+                    <input type="number" id="novoProdutoQtdVape" placeholder="Quantidade" min="0" step="1">
+                    <input type="number" id="novoProdutoPrecoCompraVape" placeholder="Preço de compra" min="0" step="0.01">
+                    <input type="number" id="novoProdutoPrecoVendaVape" placeholder="Preço de venda" min="0" step="0.01">
+                    <button class="btn btn-primary" onclick="adicionarProdutoVape()" style="grid-column: 1 / -1;">+ Adicionar Produto</button>
                 </div>
             </div>
         </div>
@@ -679,38 +713,6 @@
         </div>
     </div>
 
-    <!-- ESTOQUE PAGE -->
-    <div id="estoque" class="page">
-        <div class="container">
-            <div class="page-title">Estoque</div>
-            <div class="page-subtitle">Gerencie o inventário de produtos</div>
-
-            <div class="table-wrapper">
-                <div class="table-scroll">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Produto</th>
-                                <th class="num">Qtd Atual</th>
-                                <th class="num">Preço Unit.</th>
-                                <th class="num">Valor Total</th>
-                                <th>Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody id="estoqueBody">
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div style="margin-top: 24px; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
-                <input type="text" id="novoProdutoNome" placeholder="Nome do produto">
-                <input type="number" id="novoProdutoQtd" placeholder="Quantidade" min="0" step="1">
-                <input type="number" id="novoProdutoPreco" placeholder="Preço unitário" min="0" step="0.01">
-                <button class="btn btn-primary" onclick="adicionarProduto()">+ Adicionar Produto</button>
-            </div>
-        </div>
-    </div>
 
     <!-- RECEITAS PAGE -->
     <div id="receitas" class="page">
