@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // ════════════════════════════════════════════════════════════════
 
 function carregarDados() {
-    const saved = localStorage.getItem('controle_pessoal_dados');
+    const saved = localStorage.getItem('controle_pessoal_app_v3');
     if (saved) {
         dados = JSON.parse(saved);
     } else {
@@ -39,7 +39,10 @@ function carregarDados() {
 }
 
 function salvarDados() {
-    localStorage.setItem('controle_pessoal_dados', JSON.stringify(dados));
+    localStorage.setItem('controle_pessoal_app_v3', JSON.stringify(dados));
+    // Limpar chaves antigas
+    localStorage.removeItem('controle_pessoal_dados');
+    localStorage.removeItem('controle_pessoal_v2');
 }
 
 function carregarDadosIniciais() {
