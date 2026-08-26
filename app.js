@@ -67,10 +67,10 @@ function carregarDadosIniciais() {
     ];
 
     dados.estoque = [
-        { id: 1, modelo: 'Liquido 20ml', quantidade: 100, precoCompra: 12.00, precoVenda: 25.00, cidades: { BH: 50, 'Santa Maria': 50 } },
-        { id: 2, modelo: 'Pod 2ml', quantidade: 50, precoCompra: 7.00, precoVenda: 15.00, cidades: { BH: 25, 'Santa Maria': 25 } },
-        { id: 3, modelo: 'Bateria', quantidade: 30, precoCompra: 20.00, precoVenda: 45.00, cidades: { BH: 15, 'Santa Maria': 15 } },
-        { id: 4, modelo: 'Coil', quantidade: 75, precoCompra: 3.00, precoVenda: 8.00, cidades: { BH: 37, 'Santa Maria': 38 } }
+        { id: 1, modelo: 'IGNITE V300', quantidade: 15, precoCompra: 79.00, precoVenda: 145.00, cidades: { BH: 6, 'Santa Maria': 9 } },
+        { id: 2, modelo: 'IGNITE V500', quantidade: 8, precoCompra: 98.00, precoVenda: 160.00, cidades: { BH: 3, 'Santa Maria': 5 } },
+        { id: 3, modelo: 'ELF BAR ICE KING 40K', quantidade: 13, precoCompra: 79.00, precoVenda: 145.00, cidades: { BH: 7, 'Santa Maria': 6 } },
+        { id: 4, modelo: 'V80 ULTRA SLIM', quantidade: 3, precoCompra: 60.00, precoVenda: 115.00, cidades: { BH: 0, 'Santa Maria': 3 } }
     ];
 
     salvarDados();
@@ -355,16 +355,17 @@ function renderizarEstoqueVape() {
     tbodyGeral.innerHTML = dados.estoque.map(p => {
         const lucroPercentual = p.precoCompra > 0 ? ((p.precoVenda - p.precoCompra) / p.precoCompra * 100) : 0;
         const lucroValor = p.precoVenda - p.precoCompra;
+        const margemVenda = p.precoVenda > 0 ? ((p.precoVenda - p.precoCompra) / p.precoVenda * 100) : 0;
         return `
-            <tr>
-                <td>${p.modelo}</td>
-                <td class="num editable" onclick="editarEstoqueVape(${p.id}, 'quantidade')">${p.quantidade}</td>
-                <td class="num editable" onclick="editarEstoqueVape(${p.id}, 'precoCompra')">R$ ${p.precoCompra.toFixed(2)}</td>
-                <td class="num editable" onclick="editarEstoqueVape(${p.id}, 'precoVenda')">R$ ${p.precoVenda.toFixed(2)}</td>
-                <td class="num" style="color: ${lucroPercentual >= 0 ? 'var(--gr)' : 'var(--rd)'}">${lucroPercentual.toFixed(1)}%</td>
-                <td class="num positive">${formatarMoeda(lucroValor)}</td>
-                <td>
-                    <button class="btn btn-danger btn-small" onclick="deletarProdutoVape(${p.id})">Remover</button>
+            <tr style="border-bottom: 1px solid var(--border); padding: 12px 0;">
+                <td style="padding: 12px; font-weight: 600;">${p.modelo}</td>
+                <td class="num" style="padding: 12px; font-weight: 600;">${p.quantidade}</td>
+                <td class="num" style="padding: 12px;">R$ ${p.precoCompra.toFixed(2)}</td>
+                <td class="num" style="padding: 12px; font-weight: 600; color: var(--gr);">R$ ${p.precoVenda.toFixed(2)}</td>
+                <td class="num" style="padding: 12px; font-weight: 600;">R$ ${lucroValor.toFixed(2)}</td>
+                <td class="num" style="padding: 12px; font-weight: 700; background: rgba(16, 185, 129, 0.15); border-radius: 4px; color: var(--gr);">${margemVenda.toFixed(1)}%</td>
+                <td style="padding: 12px; text-align: center;">
+                    <button class="btn btn-danger btn-small" onclick="deletarProdutoVape(${p.id})" style="font-size: 11px;">✕</button>
                 </td>
             </tr>
         `;
@@ -373,18 +374,19 @@ function renderizarEstoqueVape() {
     // Tabela BH
     const tbodyBH = document.getElementById('estoqueBodyVapeBH');
     tbodyBH.innerHTML = dados.estoque.map(p => {
-        const lucroPercentual = p.precoCompra > 0 ? ((p.precoVenda - p.precoCompra) / p.precoCompra * 100) : 0;
         const lucroValor = p.precoVenda - p.precoCompra;
+        const margemVenda = p.precoVenda > 0 ? ((p.precoVenda - p.precoCompra) / p.precoVenda * 100) : 0;
+        const qtdBH = p.cidades.BH || 0;
         return `
-            <tr>
-                <td>${p.modelo}</td>
-                <td class="num editable" onclick="editarEstoqueVapeCidade(${p.id}, 'BH')">${p.cidades.BH || 0}</td>
-                <td class="num editable" onclick="editarEstoqueVape(${p.id}, 'precoCompra')">R$ ${p.precoCompra.toFixed(2)}</td>
-                <td class="num editable" onclick="editarEstoqueVape(${p.id}, 'precoVenda')">R$ ${p.precoVenda.toFixed(2)}</td>
-                <td class="num" style="color: ${lucroPercentual >= 0 ? 'var(--gr)' : 'var(--rd)'}">${lucroPercentual.toFixed(1)}%</td>
-                <td class="num positive">${formatarMoeda(lucroValor)}</td>
-                <td>
-                    <button class="btn btn-danger btn-small" onclick="deletarProdutoVape(${p.id})">Remover</button>
+            <tr style="border-bottom: 1px solid var(--border);">
+                <td style="padding: 12px; font-weight: 600;">${p.modelo}</td>
+                <td class="num" style="padding: 12px; font-weight: 600; ${qtdBH === 0 ? 'color: var(--rd);' : ''}">${qtdBH}</td>
+                <td class="num" style="padding: 12px;">R$ ${p.precoCompra.toFixed(2)}</td>
+                <td class="num" style="padding: 12px; font-weight: 600; color: var(--gr);">R$ ${p.precoVenda.toFixed(2)}</td>
+                <td class="num" style="padding: 12px; font-weight: 600;">R$ ${lucroValor.toFixed(2)}</td>
+                <td class="num" style="padding: 12px; font-weight: 700; background: rgba(16, 185, 129, 0.15); border-radius: 4px; color: var(--gr);">${margemVenda.toFixed(1)}%</td>
+                <td style="padding: 12px; text-align: center;">
+                    <button class="btn btn-danger btn-small" onclick="deletarProdutoVape(${p.id})" style="font-size: 11px;">✕</button>
                 </td>
             </tr>
         `;
@@ -393,18 +395,19 @@ function renderizarEstoqueVape() {
     // Tabela Santa Maria
     const tbodySM = document.getElementById('estoqueBodyVapeSantaMaria');
     tbodySM.innerHTML = dados.estoque.map(p => {
-        const lucroPercentual = p.precoCompra > 0 ? ((p.precoVenda - p.precoCompra) / p.precoCompra * 100) : 0;
         const lucroValor = p.precoVenda - p.precoCompra;
+        const margemVenda = p.precoVenda > 0 ? ((p.precoVenda - p.precoCompra) / p.precoVenda * 100) : 0;
+        const qtdSM = p.cidades['Santa Maria'] || 0;
         return `
-            <tr>
-                <td>${p.modelo}</td>
-                <td class="num editable" onclick="editarEstoqueVapeCidade(${p.id}, 'Santa Maria')">${p.cidades['Santa Maria'] || 0}</td>
-                <td class="num editable" onclick="editarEstoqueVape(${p.id}, 'precoCompra')">R$ ${p.precoCompra.toFixed(2)}</td>
-                <td class="num editable" onclick="editarEstoqueVape(${p.id}, 'precoVenda')">R$ ${p.precoVenda.toFixed(2)}</td>
-                <td class="num" style="color: ${lucroPercentual >= 0 ? 'var(--gr)' : 'var(--rd)'}">${lucroPercentual.toFixed(1)}%</td>
-                <td class="num positive">${formatarMoeda(lucroValor)}</td>
-                <td>
-                    <button class="btn btn-danger btn-small" onclick="deletarProdutoVape(${p.id})">Remover</button>
+            <tr style="border-bottom: 1px solid var(--border);">
+                <td style="padding: 12px; font-weight: 600;">${p.modelo}</td>
+                <td class="num" style="padding: 12px; font-weight: 600; ${qtdSM === 0 ? 'color: var(--rd);' : ''}">${qtdSM}</td>
+                <td class="num" style="padding: 12px;">R$ ${p.precoCompra.toFixed(2)}</td>
+                <td class="num" style="padding: 12px; font-weight: 600; color: var(--gr);">R$ ${p.precoVenda.toFixed(2)}</td>
+                <td class="num" style="padding: 12px; font-weight: 600;">R$ ${lucroValor.toFixed(2)}</td>
+                <td class="num" style="padding: 12px; font-weight: 700; background: rgba(16, 185, 129, 0.15); border-radius: 4px; color: var(--gr);">${margemVenda.toFixed(1)}%</td>
+                <td style="padding: 12px; text-align: center;">
+                    <button class="btn btn-danger btn-small" onclick="deletarProdutoVape(${p.id})" style="font-size: 11px;">✕</button>
                 </td>
             </tr>
         `;
