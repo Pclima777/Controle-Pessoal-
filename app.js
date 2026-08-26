@@ -201,20 +201,14 @@ function carregarDiaVape() {
     });
     document.getElementById('vapeDataInfo').textContent = nomeDia;
 
-    // Preencher dropdown de produtos
-    const select = document.getElementById('vapeProduto');
-    select.innerHTML = '<option value="">Selecione um produto</option>';
-    dados.estoque.forEach(p => {
-        select.innerHTML += `<option value="${p.id}">${p.nome} (${p.quantidade})</option>`;
-    });
+    if (!dados.vendas[dataInput]) {
+        dados.vendas[dataInput] = { entrada: 0, vendidos: [] };
+    }
 
-    const vendaDia = dados.vendas[dataInput] || {
-        entrada: 0,
-        vendidos: []
-    };
-
+    const vendaDia = dados.vendas[dataInput];
     document.getElementById('vapeEntrada').value = vendaDia.entrada || '';
 
+    renderizarProdutosVape();
     renderizarVendasVape(vendaDia.vendidos || []);
     calcularVape();
 }
@@ -233,6 +227,64 @@ function vapeProximo() {
     data.setDate(data.getDate() + 1);
     input.value = data.toISOString().split('T')[0];
     carregarDiaVape();
+}
+
+function renderizarProdutosVape() {
+    const tbody = document.getElementById('vapeProdutosBody');
+    tbody.innerHTML = dados.estoque.map(p => `
+        <tr>
+            <td>${p.nome}</td>
+            <td class="num">${p.quantidade}</td>
+            <td class="num">${formatarMoeda(p.precoVenda)}</td>
+            <td style="width: 120px;">
+                <input type="number" id="qtd_${p.id}" class="entry-input" min="0" value="0" placeholder="0" style="width: 100%; padding: 8px; font-size: 13px;">
+            </td>
+            <td>
+                <button class="btn btn-primary btn-small" onclick="venderProduto(${p.id})">Vender</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function venderProduto(produtoId) {
+    const qtdInput = document.getElementById(`qtd_${produtoId}`);
+    const quantidade = parseInt(qtdInput.value) || 0;
+
+    if (quantidade <= 0) {
+        alert('Digite uma quantidade válida');
+        return;
+    }
+
+    const produto = dados.estoque.find(p => p.id === produtoId);
+    if (!produto) return;
+
+    if (produto.quantidade < quantidade) {
+        alert(`Estoque insuficiente! Disponível: ${produto.quantidade}`);
+        return;
+    }
+
+    const dataInput = document.getElementById('vapeData').value;
+    if (!dados.vendas[dataInput]) {
+        dados.vendas[dataInput] = { entrada: 0, vendidos: [] };
+    }
+
+    const vendaDia = dados.vendas[dataInput];
+    const vendaExistente = vendaDia.vendidos.find(v => v.id === produtoId);
+
+    if (vendaExistente) {
+        vendaExistente.quantidade += quantidade;
+    } else {
+        vendaDia.vendidos.push({
+            id: produtoId,
+            nome: produto.nome,
+            quantidade: quantidade,
+            precoVenda: produto.precoVenda
+        });
+    }
+
+    qtdInput.value = 0;
+    renderizarVendasVape(vendaDia.vendidos);
+    calcularVape();
 }
 
 function adicionarVendaVape() {
@@ -339,10 +391,13 @@ function calcularVape() {
     const entrada = parseFloat(document.getElementById('vapeEntrada').value) || 0;
 
     const dataInput = document.getElementById('vapeData').value;
-    const vendaDia = dados.vendas[dataInput] || {
-        entrada: 0,
-        vendidos: []
-    };
+
+    if (!dados.vendas[dataInput]) {
+        dados.vendas[dataInput] = { entrada: 0, vendidos: [] };
+    }
+
+    const vendaDia = dados.vendas[dataInput];
+    vendaDia.entrada = entrada;
 
     const totalSaida = vendaDia.vendidos.reduce((sum, v) => sum + (v.quantidade * v.precoVenda), 0);
     const resultado = entrada - totalSaida;
@@ -373,22 +428,32 @@ function salvarVape() {
     const dataInput = document.getElementById('vapeData').value;
     const entrada = parseFloat(document.getElementById('vapeEntrada').value) || 0;
 
-    const vendaDia = dados.vendas[dataInput] || {
-        entrada: 0,
-        vendidos: []
-    };
+    if (!dados.vendas[dataInput]) {
+        dados.vendas[dataInput] = { entrada: 0, vendidos: [] };
+    }
+
+    const vendaDia = dados.vendas[dataInput];
+
+    if (vendaDia.vendidos.length === 0 && entrada === 0) {
+        alert('Adicione produtos ou um valor de entrada');
+        return;
+    }
 
     vendaDia.entrada = entrada;
 
-    // Reduzir estoque
+    // Reduzir estoque apenas das novas vendas
     vendaDia.vendidos.forEach(venda => {
         const produto = dados.estoque.find(p => p.id === venda.id);
         if (produto) {
-            produto.quantidade -= venda.quantidade;
+            if (produto.quantidade >= venda.quantidade) {
+                produto.quantidade -= venda.quantidade;
+            } else {
+                alert(`Estoque insuficiente de ${produto.nome}`);
+                return;
+            }
         }
     });
 
-    dados.vendas[dataInput] = vendaDia;
     salvarDados();
 
     document.getElementById('vapeIndicador').classList.add('show');
@@ -396,7 +461,9 @@ function salvarVape() {
         document.getElementById('vapeIndicador').classList.remove('show');
     }, 2000);
 
+    renderizarEstoque();
     renderizarDashboard();
+    carregarDiaVape();
 }
 
 // ════════════════════════════════════════════════════════════════

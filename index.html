@@ -524,75 +524,72 @@
             <div class="page-title">Speed Vape</div>
             <div class="page-subtitle">Registre vendas e acompanhe o estoque</div>
 
-            <div class="two-column">
-                <!-- Left Column - Form -->
-                <div class="form-col">
-                    <div class="form-group">
-                        <div class="form-label">Data</div>
-                        <div class="date-nav">
-                            <button onclick="vapeAnterior()">&larr;</button>
-                            <input type="date" id="vapeData">
-                            <button onclick="vapeProximo()">&rarr;</button>
-                        </div>
-                        <div id="vapeDataInfo" style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 8px;"></div>
-                    </div>
+            <div class="form-group" style="margin-bottom: 24px;">
+                <div class="form-label">Data</div>
+                <div class="date-nav">
+                    <button onclick="vapeAnterior()">&larr;</button>
+                    <input type="date" id="vapeData">
+                    <button onclick="vapeProximo()">&rarr;</button>
+                </div>
+                <div id="vapeDataInfo" style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 8px;"></div>
+            </div>
 
-                    <div class="form-group">
-                        <div class="form-label">Valor Total de Entradas</div>
-                        <input type="number" id="vapeEntrada" class="entry-input" step="0.01" min="0" placeholder="0" oninput="calcularVape()" style="width: 100%; font-size: 16px; padding: 12px;">
+            <!-- Tabela de Produtos para Vender -->
+            <div style="margin-bottom: 24px;">
+                <h3 style="margin-bottom: 16px; font-size: 14px; text-transform: uppercase; color: var(--text-secondary);">Produtos Disponíveis</h3>
+                <div class="table-wrapper">
+                    <div class="table-scroll">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Produto</th>
+                                    <th class="num">Estoque</th>
+                                    <th class="num">Preço Unit.</th>
+                                    <th class="num">Qtd a Vender</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="vapeProdutosBody">
+                            </tbody>
+                        </table>
                     </div>
+                </div>
+            </div>
 
-                    <div class="form-group">
-                        <div class="form-label">Produtos Vendidos</div>
-                        <div style="margin-bottom: 12px;">
-                            <select id="vapeProduto">
-                                <option value="">Selecione um produto</option>
-                            </select>
-                        </div>
-                        <div style="display: grid; grid-template-columns: 1fr auto; gap: 8px;">
-                            <input type="number" id="vapeQtd" class="entry-input" min="1" value="1" placeholder="Qtd">
-                            <button class="btn btn-primary btn-small" onclick="adicionarVendaVape()">+</button>
-                        </div>
-                    </div>
-
+            <!-- Vendas do Dia -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
+                <!-- Esquerda: Vendas Registradas -->
+                <div>
+                    <h3 style="margin-bottom: 16px; font-size: 14px; text-transform: uppercase; color: var(--text-secondary);">Vendas Registradas</h3>
                     <div id="vapeVendasList" style="margin-bottom: 16px;"></div>
-
-                    <button class="btn btn-primary" onclick="salvarVape()" style="width: 100%;">✓ Registrar Venda</button>
-                    <div class="salvo-indicator" id="vapeIndicador">✓ Salvo</div>
                 </div>
 
-                <!-- Right Column - Summary -->
-                <div class="res-col">
+                <!-- Direita: Resumo e Entrada -->
+                <div>
                     <div style="margin-bottom: 24px;">
-                        <div class="card-label">Entradas</div>
-                        <div class="card-value positive" id="vapeTotalEntrada">R$ 0</div>
+                        <div class="form-label">Valor Total de Entradas</div>
+                        <input type="number" id="vapeEntrada" class="entry-input" step="0.01" min="0" placeholder="0" oninput="calcularVape()" style="width: 100%; font-size: 18px; padding: 12px; font-weight: 600;">
                     </div>
 
-                    <div style="margin-bottom: 24px;">
-                        <div class="card-label">Saídas (Estoque)</div>
-                        <div class="card-value negative" id="vapeTotalSaida">R$ 0</div>
-                    </div>
-
-                    <div style="margin-bottom: 24px;">
-                        <div class="card-label">Resultado</div>
-                        <div class="card-value" id="vapeResultado">R$ 0</div>
-                    </div>
-
-                    <div class="table-wrapper" style="margin-top: 24px;">
-                        <div class="table-scroll">
-                            <table style="font-size: 12px;">
-                                <thead>
-                                    <tr>
-                                        <th>Produto</th>
-                                        <th class="num">Qtd</th>
-                                        <th class="num">Valor</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="vapeResumoBody">
-                                </tbody>
-                            </table>
+                    <div class="table-wrapper" style="margin-bottom: 16px;">
+                        <div style="padding: 20px;">
+                            <div style="margin-bottom: 16px;">
+                                <div class="card-label">Entradas</div>
+                                <div class="card-value positive" id="vapeTotalEntrada">R$ 0</div>
+                            </div>
+                            <div style="margin-bottom: 16px;">
+                                <div class="card-label">Saídas (Estoque)</div>
+                                <div class="card-value negative" id="vapeTotalSaida">R$ 0</div>
+                            </div>
+                            <div>
+                                <div class="card-label">Resultado</div>
+                                <div class="card-value" id="vapeResultado">R$ 0</div>
+                            </div>
                         </div>
                     </div>
+
+                    <button class="btn btn-primary" onclick="salvarVape()" style="width: 100%; margin-bottom: 8px;">✓ Registrar Venda</button>
+                    <div class="salvo-indicator" id="vapeIndicador">✓ Salvo com sucesso!</div>
                 </div>
             </div>
         </div>
