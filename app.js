@@ -265,10 +265,13 @@ function adicionarVendaVape() {
         });
     }
 
+    dados.vendas[dataInput] = vendaDia;
     renderizarVendasVape(vendaDia.vendidos);
     calcularVape();
+
     document.getElementById('vapeQtd').value = 1;
     document.getElementById('vapeProduto').value = '';
+    document.getElementById('vapeProduto').focus();
 }
 
 function editarVendaVape(index, campo, novoValor) {
@@ -291,24 +294,30 @@ function editarVendaVape(index, campo, novoValor) {
 
 function renderizarVendasVape(vendidos) {
     const list = document.getElementById('vapeVendasList');
-    list.innerHTML = vendidos.map((v, i) => `
-        <div style="background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; padding: 12px; margin-bottom: 8px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                <div style="font-weight: 600;">${v.nome}</div>
-                <button class="btn btn-secondary btn-icon" onclick="removerVendaVape(${i})">✕</button>
-            </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 12px;">
-                <div>
-                    <div style="color: var(--text-secondary); margin-bottom: 4px;">Quantidade</div>
-                    <input type="number" value="${v.quantidade}" min="1" onchange="editarVendaVape(${i}, 'quantidade', this.value)" style="width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 4px; padding: 6px; color: var(--text);">
+    list.innerHTML = vendidos.map((v, i) => {
+        const valorTotal = v.quantidade * v.precoVenda;
+        return `
+            <div style="background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; padding: 12px; margin-bottom: 8px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <div>
+                        <div style="font-weight: 600; margin-bottom: 4px;">${v.nome}</div>
+                        <div style="font-size: 12px; color: var(--text-secondary);">Total: <strong style="color: var(--gr);">${formatarMoeda(valorTotal)}</strong></div>
+                    </div>
+                    <button class="btn btn-secondary btn-icon" onclick="removerVendaVape(${i})">✕</button>
                 </div>
-                <div>
-                    <div style="color: var(--text-secondary); margin-bottom: 4px;">Preço Unit.</div>
-                    <input type="number" value="${v.precoVenda.toFixed(2)}" step="0.01" min="0" onchange="editarVendaVape(${i}, 'preco', this.value)" style="width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 4px; padding: 6px; color: var(--text);">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 12px;">
+                    <div>
+                        <div style="color: var(--text-secondary); margin-bottom: 4px;">Qtd</div>
+                        <input type="number" value="${v.quantidade}" min="1" onchange="editarVendaVape(${i}, 'quantidade', this.value); calcularVape()" style="width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 4px; padding: 6px; color: var(--text); font-weight: 600;">
+                    </div>
+                    <div>
+                        <div style="color: var(--text-secondary); margin-bottom: 4px;">Preço Unit.</div>
+                        <input type="number" value="${v.precoVenda.toFixed(2)}" step="0.01" min="0" onchange="editarVendaVape(${i}, 'preco', this.value); calcularVape()" style="width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 4px; padding: 6px; color: var(--text); font-weight: 600;">
+                    </div>
                 </div>
             </div>
-        </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
 function removerVendaVape(index) {
